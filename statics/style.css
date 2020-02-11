@@ -1,0 +1,85 @@
+body {
+    font-family: 'Nanum Gothic Coding', monospace;
+    background-color: rgb(230, 230, 230);
+}
+
+/* input[type=submit] {
+padding:5px 15px;
+background:#cccccc;
+border:0 none;
+cursor:pointer;
+-webkit-border-radius: 5px;
+border-radius: 5px;
+} */
+
+header {
+    padding: 15px;
+    margin-bottom: 10px;
+    background-color: #333333;
+    color: rgb(240, 240, 240);
+}
+
+nav {
+    width: 20%;
+    height: 60vh;
+    padding: 20px;
+    margin-bottom: 20px;
+    float: left;
+    border: none;
+    color: #333333;
+    border-right: 1px solid #bcbcbc;
+}
+
+footer {
+    clear: both;
+    border-top: 1px solid #bcbcbc;
+}
+
+hr {
+    margin-left: 0;
+    margin-bottom: 10px;
+    border-color: #bcbcbc;
+}
+
+a:link {
+    text-decoration: none;
+    color: #777777;
+}
+
+a:visited {
+    text-decoration: none;
+    color: #777777;
+}
+
+a:active {
+    text-decoration: none;
+    color: #777777;
+}
+
+a:hover {
+    text-decoration: none;
+    color: #353434;
+}
+
+#login {
+    font-weight: 700;
+    background-color: #333333;
+    float: right;
+    margin-top: 3px;
+    margin-right: 5px;
+    margin-bottom: 3px;
+}
+
+#header_title {
+    font-size: 40px;
+    padding: 20px;
+}
+
+#content {
+    width: 70%;
+    height: 60vh;
+    padding: 20px;
+    margin-bottom: 20px;
+    float: right;
+    text-align: center;
+}
