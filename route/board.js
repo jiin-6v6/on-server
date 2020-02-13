@@ -16,7 +16,7 @@ var conn = mysql.createConnection({
 conn.connect();
 
 // print out post list
-router.get('/board/:boardId', function (request, response) {
+router.get('/:boardId', function (request, response) {
     if (!auth.isOwner(request, response)) {
         response.redirect('/');
     }

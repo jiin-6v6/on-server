@@ -61,9 +61,17 @@ a:hover {
     color: #353434;
 }
 
-#login {
+#login, #logout, #my_info {
     font-weight: 700;
     background-color: #333333;
+    float: right;
+    margin-top: 5px;
+    margin-right: 5px;
+    margin-bottom: 3px;
+}
+
+#user_id{
+    font-weight: 700;
     float: right;
     margin-top: 3px;
     margin-right: 5px;

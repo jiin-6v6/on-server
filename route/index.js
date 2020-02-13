@@ -3,7 +3,7 @@ var router = express.Router();
 var template = require('../lib/template.js');
 var auth = require('../lib/auth.js');
 
-router.get('/', function(require, response){
+router.get('/', function(request, response){
     var title = ``;
     var nav = `<nav>
         <h2>게시판</h2>
@@ -12,7 +12,7 @@ router.get('/', function(require, response){
         <p id="side-list"><a href="/board/2">익명게시판</a></p>
         </nav>`;
     var content = `<img src="/icebear.png" width=500px>`;
-    var login = auth.statusUI(require, response);
+    var login = auth.statusUI(request, response);
 
     /*
     var alert = ``;
