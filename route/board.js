@@ -28,7 +28,9 @@ router.get('/write', function (request, response){
             <p id="side-list"><a href="/board/1">자유게시판</a></p>
             <p id="side-list"><a href="/board/2">익명게시판</a></p>
             </nav>`;
-        var content = `<form action="" method="POST">
+        var content = `
+            <div id="content">
+            <form action="" method="POST">
             <select name="category">
             <option value="">카테고리 선택</option>
             <option value="free">자유게시판</option>
@@ -41,7 +43,8 @@ router.get('/write', function (request, response){
             <input type="file" id="post_file">
             <br>
             <input type="submit" id="to_post" style="position: absolute; right: 130px;">
-            </form>`;
+            </form>
+            </div>`;
         var html = template.basic(title, login, nav, content);
         response.send(html);
     }
@@ -74,21 +77,26 @@ router.get('/:boardId', function (request, response) {
                 <p id="side-list"><a href="/board/2">익명게시판</a></p>
                 </nav>`;
             if (results[0] === undefined) {
-                content = `<div id=board_write>
+                content = `
+                    <div id="content">
+                    <div id=board_write>
                     <form action="/board/write">
                     <button onmouseover="this.style.color='#cccccc'" onmouseout="this.style.color=''" class="btn"
-                    type="submit" id="login">글쓰기</button>
+                    type="submit" id="btn_write">글쓰기</button>
                     </form>
                     </div>
-                    게시글이 존재하지 않습니다.`;
+                    게시글이 존재하지 않습니다.
+                    </div>`;
             }
             else {
-                content = `<div id=board_write>
+                content = `
+                <div id="content">
+                <div id=board_write>
                 <form action="/board/write">
                 <button onmouseover="this.style.color='#cccccc'" onmouseout="this.style.color=''" class="btn"
-                type="submit" id="login">글쓰기</button>
+                type="submit" id="btn_write">글쓰기</button>
                 </form>
-                </div>` + template.postlist(results, boardId);
+                </div>` + template.postlist(results, boardId) + `</div>`;
             }
             var html = template.basic(title, login, nav, content);
             response.send(html);

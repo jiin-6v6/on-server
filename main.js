@@ -1,5 +1,8 @@
 var express = require('express');
 var app = express();
+
+app.use(express.static('statics')); // for window10, it should be on top
+
 var fs = require('fs');
 var flash = require('connect-flash');
 var path = require('path');
@@ -12,7 +15,6 @@ var template = require('./lib/template.js');
 
 var wrongPath = false;
 
-app.use(express.static('statics'));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(compression());
 app.use(session({
@@ -36,10 +38,12 @@ app.get('*', function (request, response, next) {
 var indexRouter = require('./route/index');
 var boardRouter = require('./route/board');
 var loginRouter = require('./route/auth')(passport);
+var myinfoRouter = require('./route/my_info');
 
 app.use('/', indexRouter);
 app.use('/board', boardRouter);
 app.use('/auth', loginRouter);
+app.use('/my_info', myinfoRouter);
 
 app.use(function (req, res, next) {
     res.status(404).send('Sorry cant find that!');

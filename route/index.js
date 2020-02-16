@@ -11,7 +11,7 @@ router.get('/', function(request, response){
         <p id="side-list"><a href="/board/1">자유게시판</a></p>
         <p id="side-list"><a href="/board/2">익명게시판</a></p>
         </nav>`;
-    var content = `<img src="/icebear.png" width=500px>`;
+    var content = `<div id="content"><img src="/icebear.png" width=500px></div>`;
     var login = auth.statusUI(request, response);
 
     /*

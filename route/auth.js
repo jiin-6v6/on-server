@@ -28,15 +28,35 @@ module.exports = function (passport) {
         var nav = ``;
         var login = `<form action="/auth/login">
             <button onmouseover="this.style.color='#cccccc'" onmouseout="this.style.color=''" class="btn"
-            type="submit" id="login">로그인</button>
+            type="submit" id="btn_login">로그인</button>
             </form>`;
 
-        var content = `<form action="/auth/login_process" method="POST">
-            <p>아이디 : <input type="text" name="id" placeholer="아이디를 입력해주세요."></p>
-            <p>비밀번호 : <input type="password" name="pwd" placeholer="비밀번호를 입력해주세요."></p>
-            <p><input type="submit" value="로그인"></p>
-            </form>
-            <div id="flash_msg">${feedback}</div>`;
+        var content = `
+        <div id="login_content">
+        <h3 style='text-align: left; padding:20px 0 0 30px; margin:0;'>로그인</h3><hr>
+        <form id="login_process" action="/auth/login_process" method="post">
+          <ul id = "login_list">
+            <li>
+              <input class="input_box" type="text" name="login_id" placeholder="ID">
+            </li>
+            <li>
+              <input class="input_box" type="password" name="login_pwd" placeholder="PASSWORD">
+            </li>
+            <li id="login_btn">
+              <button type="submit" id="login_btn_a">LOGIN
+            </li>
+          </ul>
+        </form>
+        <div style="margin:10px auto 0 40px;">
+          <a href="/auth/register" style="margin-right: 30px;">
+            회원가입
+          </a>
+          <a href="#">
+            아이디/비밀번호 찾기
+          </a>
+        </div><hr>
+        </div>
+        `;
 
         var html = template.basic(title, login, nav, content);
         response.send(html);
@@ -47,7 +67,8 @@ module.exports = function (passport) {
             successRedirect: '/',
             failureRedirect: '/auth/login',
             failureFlash: true
-        }));
+        })
+    );
 
     router.get('/logout', function (request, response) {
         request.logout();
@@ -55,6 +76,58 @@ module.exports = function (passport) {
             response.redirect('/');
         });
     });
+
+    router.get('/register', function (request, response) {
+        var title = '';
+        var nav = '';
+        var login = `
+        <form action="/auth/login">
+        <button onmouseover="this.style.color='#cccccc'" onmouseout="this.style.color=''" class="btn"
+        type="submit" id="btn_login">로그인</button>
+        </form>`;
+        var content = `
+        <div id="login_content">
+        <h3 style='text-align: left; padding:20px 0 0 30px; margin:0;'>회원가입</h3><hr>
+        <form id="login_process" action="http://localhost:3000/main.js" method="post">
+          <ul id = "regist_list">
+            <li>
+              <input class="input_box" type="text" name="auth_name" placeholder="이름">
+            </li>
+            <form action="check_id" style="margin:0; padding: 0;">
+              <li style="position:relative;">
+                <input class="input_box" type="text" name="auth_id" placeholder="ID">
+                <button href="#" class="btn regist_btn_a">중복확인</button>
+              </li>
+            </form>
+            <li>
+              <input class="input_box" type="password" name="auth_pwd" placeholder="PASSWORD">
+            </li>
+            <li>
+              <input class="input_box" type="password" name="auth_pwd_check" placeholder="PASSWORD 확인">
+            </li>
+            <li>
+              <input class="input_box" type="text" name="auth_birth" placeholder="생년월일 8자리 ex)19950515" maxlength="8">
+            </li>
+            <form action="email_send" style="margin:0; padding: 0;">
+              <li style="position:relative;">
+                <input class="input_box" type="text" name="auth_email" placeholder="이메일">
+                <button href="#" class="btn regist_btn_a" style="font-size: 12px; padding:0;">인증번호보내기</button>
+              </li>
+            </form>
+            <form action="email_check" style="margin:0; padding: 0;">
+              <li style="position:relative;">
+                <input class="input_box" type="text" name="auth_email_check" placeholder="인증번호">
+                <button href="#" class="btn regist_btn_a">확인</button>
+              </li>
+            </form>
+            <button href="#" class="btn regist_btn_a" style="width:100%; position:static; margin-top: 30px;">회원가입</button>
+          </ul>
+        </form><hr></div>`;
+
+        var html = template.basic(title, login, nav, content);
+        response.send(html);
+    });
+
     return router;
 }
 // router.get('/login', function (request, response) {
