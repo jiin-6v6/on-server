@@ -10,7 +10,6 @@ var session = require('express-session');
 var FileStore = require('session-file-store')(session);
 var template = require('./lib/template.js');
 
-
 var wrongPath = false;
 
 app.use(express.static('statics'));

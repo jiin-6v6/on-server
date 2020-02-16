@@ -91,3 +91,12 @@ a:hover {
     float: right;
     text-align: center;
 }
+
+#post_title{
+    width: 600px;
+}
+
+#post_content{
+    width: 810px;
+    height: 300px;
+}
