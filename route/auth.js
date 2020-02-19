@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var passport = require('passport');
+var session = require('express-session');
 var localStrategy = require('passport-local').Strategy;
 var qs = require('querystring');
 var sanitizeHtml = require('sanitize-html');
@@ -71,10 +72,10 @@ module.exports = function (passport) {
     );
 
     router.get('/logout', function (request, response) {
-        request.logout();
-        request.session.save(function () {
+        request.session.save(function () {//데이터 저장이 끝났을때 호출됨 안전하게 redirect하기 위함
             response.redirect('/');
         });
+        request.session.destroy();
     });
 
     router.get('/register', function (request, response) {
@@ -212,7 +213,7 @@ module.exports = function (passport) {
 //     request.session.save(function(){
 //         response.redirect('/');
 //     });
-    
+
 //     // request.session.destroy(function (err) {
 //     //     response.redirect('/');
 //     // });

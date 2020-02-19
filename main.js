@@ -9,8 +9,9 @@ var path = require('path');
 var qs = require('querystring');
 var bodyParser = require('body-parser');
 var compression = require('compression');
+var mysql = require('mysql');
 var session = require('express-session');
-var FileStore = require('session-file-store')(session);
+var MySQLStore = require('express-mysql-session')(session);
 var template = require('./lib/template.js');
 
 var wrongPath = false;
@@ -21,7 +22,12 @@ app.use(session({
     secret: 'asadlfkj!@#!@#dfgasdg',
     resave: false,
     saveUninitialized: true,
-    store: new FileStore()
+    store: new MySQLStore({
+        host: 'localhost',
+        user: 'root',
+        password: 'mintchoco',
+        database: 'community'
+    })
 }));
 app.use(flash());   // Since it uses session, please write after app.use(session)
 var passport = require('./lib/passport.js')(app);   // it should be located after app.use(flash())

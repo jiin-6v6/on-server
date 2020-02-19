@@ -4,6 +4,12 @@ var template = require('../lib/template.js');
 var auth = require('../lib/auth.js');
 
 router.get('/', function(request, response){
+    if(auth.isOwner){
+        var login = auth.statusUI(request, response);
+    }
+    else{
+        var login = auth.statusUI(request, response);
+    }
     var title = ``;
     var nav = `<nav>
         <h2>게시판</h2>
@@ -12,16 +18,7 @@ router.get('/', function(request, response){
         <p id="side-list"><a href="/board/2">익명게시판</a></p>
         </nav>`;
     var content = `<div id="content"><img src="/icebear.png" width=500px></div>`;
-    var login = auth.statusUI(request, response);
 
-    /*
-    var alert = ``;
-    
-    if(wrongPath){
-        wrongPath = false;
-        alert = `<script type="text/javascript>alert("Hello, World!");</script>`;
-    }
-    */
     html = template.basic(title, login, nav, content);
     response.send(html);
 });
