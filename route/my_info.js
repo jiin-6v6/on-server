@@ -19,7 +19,7 @@ conn.connect();
 router.get('/', function (request, response) {
     var login = auth.statusUI(request, response);
     var sql = "SELECT id, email, name, birth FROM user_info WHERE id=?";
-    conn.query(sql, [request.user], function (error, results, field) {
+    conn.query(sql, [request.user.id], function (error, results, field) {
         if (error) {
             throw error;
         }

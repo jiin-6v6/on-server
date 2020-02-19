@@ -16,7 +16,7 @@ var conn = mysql.createConnection({
 conn.connect();
 
 router.get('/write', function (request, response){
-    if (!auth.isOwner(request, response)) {
+    if (!request.user.isOwner || !request.user.isAdmin) {
         response.redirect('/');
     }
     else{
@@ -52,7 +52,7 @@ router.get('/write', function (request, response){
 
 // print out post list
 router.get('/:boardId', function (request, response) {
-    if (!auth.isOwner(request, response)) {
+    if (!auth.isLogin) {
         response.redirect('/');
     }
     else {
@@ -104,7 +104,7 @@ router.get('/:boardId', function (request, response) {
     }
 });
 router.get('/:boardId/:postId', function (request, response) {
-    if (!auth.isOwner(request, response)) {
+    if (!auth.isLogin) {
         response.redirect('/');
     }
     else {
