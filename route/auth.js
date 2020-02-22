@@ -7,6 +7,7 @@ var qs = require('querystring');
 var sanitizeHtml = require('sanitize-html');
 var mysql = require('mysql');
 var template = require('../lib/template.js');
+var auth = require('../lib/auth.js');
 
 // mysql connection
 var conn = mysql.createConnection({
@@ -19,48 +20,53 @@ conn.connect();
 
 module.exports = function (passport) {
     router.get('/login', function (request, response) {
-        var flash_msg = request.flash();
-        var feedback = ``;
-        if (flash_msg.error) {
-            feedback = flash_msg.error[0];
+        if (auth.isLogin(request, response)) {
+            response.redirect('/');
         }
+        else {
+            var flash_msg = request.flash();
+            var feedback = ``;
+            if (flash_msg.error) {
+                feedback = flash_msg.error[0];
+            }
 
-        var title = ``;
-        var nav = ``;
-        var login = `<form action="/auth/login">
-            <button onmouseover="this.style.color='#cccccc'" onmouseout="this.style.color=''" class="btn"
-            type="submit" id="btn_login">로그인</button>
-            </form>`;
+            var title = ``;
+            var nav = ``;
+            var login = `<form action="/auth/login">
+                <button onmouseover="this.style.color='#cccccc'" onmouseout="this.style.color=''" class="btn"
+                type="submit" id="btn_login">로그인</button>
+                </form>`;
 
-        var content = `
-        <div id="login_content">
-        <h3 style='text-align: left; padding:20px 0 0 30px; margin:0;'>로그인</h3><hr>
-        <form id="login_process" action="/auth/login_process" method="post">
-          <ul id = "login_list">
-            <li>
-              <input class="input_box" type="text" name="login_id" placeholder="ID">
-            </li>
-            <li>
-              <input class="input_box" type="password" name="login_pwd" placeholder="PASSWORD">
-            </li>
-            <li id="login_btn">
-              <button type="submit" id="login_btn_a">LOGIN
-            </li>
-          </ul>
-        </form>
-        <div style="margin:10px auto 0 40px;">
-          <a href="/auth/register" style="margin-right: 30px;">
-            회원가입
-          </a>
-          <a href="#">
-            아이디/비밀번호 찾기
-          </a>
-        </div><hr>
-        </div>
-        `;
+            var content = `
+            <div id="login_content">
+            <h3 style='text-align: left; padding:20px 0 0 30px; margin:0;'>로그인</h3><hr>
+            <form id="login_process" action="/auth/login_process" method="post">
+              <ul id = "login_list">
+                <li>
+                  <input class="input_box" type="text" name="login_id" placeholder="ID">
+                </li>
+                <li>
+                  <input class="input_box" type="password" name="login_pwd" placeholder="PASSWORD">
+                </li>
+                <li id="login_btn">
+                  <button type="submit" id="login_btn_a">LOGIN
+                </li>
+              </ul>
+            </form>
+            <div style="margin:10px auto 0 40px;">
+              <a href="/auth/register" style="margin-right: 30px;">
+                회원가입
+              </a>
+              <a href="/auth/find_info">
+                아이디/비밀번호 찾기
+              </a>
+            </div><hr>
+            </div>
+            `;
 
-        var html = template.basic(title, login, nav, content);
-        response.send(html);
+            var html = template.basic(title, login, nav, content);
+            response.send(html);
+        }
     });
 
     router.post('/login_process',
@@ -79,56 +85,170 @@ module.exports = function (passport) {
     });
 
     router.get('/register', function (request, response) {
-        var title = '';
-        var nav = '';
-        var login = `
-        <form action="/auth/login">
-        <button onmouseover="this.style.color='#cccccc'" onmouseout="this.style.color=''" class="btn"
-        type="submit" id="btn_login">로그인</button>
-        </form>`;
-        var content = `
-        <div id="login_content">
-        <h3 style='text-align: left; padding:20px 0 0 30px; margin:0;'>회원가입</h3><hr>
-        <form id="login_process" action="http://localhost:3000/main.js" method="post">
-          <ul id = "regist_list">
-            <li>
-              <input class="input_box" type="text" name="auth_name" placeholder="이름">
-            </li>
-            <form action="check_id" style="margin:0; padding: 0;">
-              <li style="position:relative;">
-                <input class="input_box" type="text" name="auth_id" placeholder="ID">
-                <button href="#" class="btn regist_btn_a">중복확인</button>
-              </li>
-            </form>
-            <li>
-              <input class="input_box" type="password" name="auth_pwd" placeholder="PASSWORD">
-            </li>
-            <li>
-              <input class="input_box" type="password" name="auth_pwd_check" placeholder="PASSWORD 확인">
-            </li>
-            <li>
-              <input class="input_box" type="text" name="auth_birth" placeholder="생년월일 8자리 ex)19950515" maxlength="8">
-            </li>
-            <form action="email_send" style="margin:0; padding: 0;">
-              <li style="position:relative;">
-                <input class="input_box" type="text" name="auth_email" placeholder="이메일">
-                <button href="#" class="btn regist_btn_a" style="font-size: 12px; padding:0;">인증번호보내기</button>
-              </li>
-            </form>
-            <form action="email_check" style="margin:0; padding: 0;">
-              <li style="position:relative;">
-                <input class="input_box" type="text" name="auth_email_check" placeholder="인증번호">
-                <button href="#" class="btn regist_btn_a">확인</button>
-              </li>
-            </form>
-            <button href="#" class="btn regist_btn_a" style="width:100%; position:static; margin-top: 30px;">회원가입</button>
-          </ul>
-        </form><hr></div>`;
+        if (auth.isLogin(request, response)) {
+            response.redirect('/');
+        }
+        else {
+            var title = '';
+            var nav = '';
+            var login = `
+            <form action="/auth/login">
+            <button onmouseover="this.style.color='#cccccc'" onmouseout="this.style.color=''" class="btn"
+            type="submit" id="btn_login">로그인</button>
+            </form>`;
+            var content = `
+            <div id="login_content">
+            <h3 style='text-align: left; padding:20px 0 0 30px; margin:0;'>회원가입</h3><hr>
+            <form id="login_process" action="http://localhost:3000/main.js" method="post">
+              <ul id = "regist_list">
+                <li>
+                  <input class="input_box" type="text" name="auth_name" placeholder="이름">
+                </li>
+                <form action="check_id" style="margin:0; padding: 0;">
+                  <li style="position:relative;">
+                    <input class="input_box" type="text" name="auth_id" placeholder="ID">
+                    <button href="#" class="btn regist_btn_a">중복확인</button>
+                  </li>
+                </form>
+                <li>
+                  <input class="input_box" type="password" name="auth_pwd" placeholder="PASSWORD">
+                </li>
+                <li>
+                  <input class="input_box" type="password" name="auth_pwd_check" placeholder="PASSWORD 확인">
+                </li>
+                <li>
+                  <input class="input_box" type="text" name="auth_birth" placeholder="생년월일 8자리 ex)19950515" maxlength="8">
+                </li>
+                <form action="email_send" style="margin:0; padding: 0;">
+                  <li style="position:relative;">
+                    <input class="input_box" type="text" name="auth_email" placeholder="이메일">
+                    <button href="#" class="btn regist_btn_a" style="font-size: 12px; padding:0;">인증번호보내기</button>
+                  </li>
+                </form>
+                <form action="email_check" style="margin:0; padding: 0;">
+                  <li style="position:relative;">
+                    <input class="input_box" type="text" name="auth_email_check" placeholder="인증번호">
+                    <button href="#" class="btn regist_btn_a">확인</button>
+                  </li>
+                </form>
+                <button href="#" class="btn regist_btn_a" style="width:100%; position:static; margin-top: 30px;">회원가입</button>
+              </ul>
+            </form><hr></div>`;
 
-        var html = template.basic(title, login, nav, content);
-        response.send(html);
+            var html = template.basic(title, login, nav, content);
+            response.send(html);
+        }
     });
 
+    router.get('/find_info', function (request, response) {
+        if (auth.isLogin(request, response)) {
+            response.redirect('/');
+        }
+        else {
+            var title = '';
+            var nav = '';
+            var login = auth.statusUI(request, response);
+            var content = `<div id="find_id">
+            <h2>아이디 찾기</h2>
+            <br>
+            <form action="/auth/find_id_process" method="POST">
+                <label name="name">
+                    <p>이&nbsp;&nbsp;름 : <input type="text" placeholder="이름을 입력하세요." name="name" style="float: center;"></p>
+                </label>
+                <br>
+                <label name="email">
+                    <p>이메일 : <input type="text" placeholder="이메일을 입력하세요." name="email" style="float: center;"></p>
+                </label>
+                <br>
+                <br>
+                <br>
+                <button type="submit" class="btn" id="btn_find_id" style="float: right;">아이디 찾기</button>
+            </form>
+            </div>
+      
+            <div id="find_pwd">
+            <h2>비밀번호 찾기</h2>
+            <br>
+            <form action="/auth/find_pwd_process" method="POST">
+                <label name="id">
+                    <p>이&nbsp;&nbsp;름 : <input type="text" placeholder="이름을 입력하세요." name="name" style="float: center;"></p>
+                </label>
+                <br>
+                <label name="email">
+                    <p>이메일 : <input type="text" placeholder="이메일을 입력하세요." name="email" style="float: center;"></p>
+                </label>
+                <br>
+                <label name="id">
+                    <p>비밀번호 : <input type="text" placeholder="아이디를 입력하세요." name="id" style="float: center;"></p>
+                </label>
+                <br>
+                <button type="submit" class="btn" id="btn_find_pwd" style="float: right;">비밀번호 찾기</button>
+            </form>
+            </div>`;
+            var html = template.basic(title, login, nav, content);
+            response.send(html);
+        }
+    });
+
+    router.post('/find_id_process', function (request, response) {
+        if (auth.isLogin(request, response)) {
+            response.redirect('/auth/find_info');
+            return false;
+        }
+        var post = request.body;
+        var name = post.name;
+        var email = post.email;
+
+        var sql = 'SELECT id FROM user_info WHERE name=? AND email=?'
+        conn.query(sql, [name, email], function (error, results) {
+            if (error) {
+                throw error;
+            }
+            if (results[0]) {
+                response.send(results[0]);
+                // 아이디를 어떻게 알려줄 것인가?
+                // alert 관련?
+            }
+            else {
+                response.send('no result');
+                // alert와 관련된 부분
+            }
+        });
+
+    });
+
+    router.post('/find_pwd_process', function (request, response) {
+        if (auth.isLogin(request, response)) {
+            response.redirect('/auth/find_info');
+            return false;
+        }
+        var post = request.body;
+        var name = post.name;
+        var email = post.email;
+        var id = post.id;
+
+        var sql = 'SELECT pwd FROM user_info WHERE id=? AND name=? AND email=?'
+        conn.query(sql, [id, name, email], function (error, results) {
+            if (error) {
+                throw error;
+            }
+            if (results[0]) {
+                response.send(results[0]);
+                // 비밀번호를 어떻게 알려줄 것인가?
+                // 비밀번호 hashing하면 원래 비밀번호를 알려줄수가 없는데
+                // 임시로 비밀번호를 재발급할 것인가?
+                // 이러면 또 정보수정이랑도 연관이 되어버림 (비밀번호 수정)
+                // alert 관련?
+            }
+            else {
+                response.send('no result');
+                // alert와 관련된 부분
+            }
+        });
+
+        response.send(name + email + pwd);
+
+    });
     return router;
 }
 // router.get('/login', function (request, response) {

@@ -45,21 +45,23 @@ var indexRouter = require('./route/index');
 var boardRouter = require('./route/board');
 var loginRouter = require('./route/auth')(passport);
 var myinfoRouter = require('./route/my_info');
+var adminRouter = require('./route/admin');
 
 app.use('/', indexRouter);
 app.use('/board', boardRouter);
 app.use('/auth', loginRouter);
 app.use('/my_info', myinfoRouter);
+app.use('/admin', adminRouter);
 
 app.use(function (req, res, next) {
     res.status(404).send('Sorry cant find that!');
 });
 
 app.use(function (err, req, res, next) {
-    console.error(err.stack)
-    res.status(500).send('Something broke!')
+    console.error(err.stack);
+    res.status(500).send('Something broke!');
 });
 
 app.listen(3000, function () {
-    console.log('Example app listening on port 3000!')
+    console.log('Example app listening on port 3000!');
 });

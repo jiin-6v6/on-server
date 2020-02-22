@@ -17,6 +17,11 @@ var conn = mysql.createConnection({
 conn.connect();
 
 router.get('/', function (request, response) {
+    if(!auth.isLogin){
+        response.redirect('/');
+        return false;
+    }
+
     var login = auth.statusUI(request, response);
     var sql = "SELECT id, email, name, birth FROM user_info WHERE id=?";
     conn.query(sql, [request.user.id], function (error, results, field) {
@@ -27,9 +32,9 @@ router.get('/', function (request, response) {
         var nav = `<nav>
             <h2>정보 관리</h2>
             <p id="side-list"><a href="/my_info">내 정보</a></p>
-            <p id="side-list"><a href="/my_info/0">알림</a></p>
-            <p id="side-list"><a href="/my_info/1">내가 쓴 글</a></p>
-            <p id="side-list"><a href="/my_info/2">내가 쓴 댓글</a></p>
+            <p id="side-list"><a href="/my_info/alarm">알림</a></p>
+            <p id="side-list"><a href="/my_info/mypost">내가 쓴 글</a></p>
+            <p id="side-list"><a href="/my_info/mycomment">내가 쓴 댓글</a></p>
             </nav>`;
         var content = template.myinfo(results);
         var html = template.basic(title, login, nav, content);
@@ -39,8 +44,53 @@ router.get('/', function (request, response) {
 
 router.post('/update', function (request, response){
     var post = request.body;
+    var login = auth.statusUI(request, response);
+    var title = ``;
+    var nav = `<nav>
+        <h2>정보 관리</h2>
+        <p id="side-list"><a href="/my_info">내 정보</a></p>
+        <p id="side-list"><a href="/my_info/alarm">알림</a></p>
+        <p id="side-list"><a href="/my_info/mypost">내가 쓴 글</a></p>
+        <p id="side-list"><a href="/my_info/mycomment">내가 쓴 댓글</a></p>
+        </nav>`;
+    var content = template.update(post);
+    var html = template.basic(title, login, nav, content);
+    response.send(html);
+});
+
+router.post('/update_process', function(request, response){
+    var post = request.body;
     console.log(post);
-    //건우오빠가 여기를 채워오면 됩니다.
+    var sql = `INSERT INTO user_info VALUES (?, ?, 'myname', ?,'myemail@gmail.com', 0, 0);`
+    conn.
+    conn.query(sql, [post.auth_id, post.auth_pwd, post.auth_birth, post.auth_email, ], function (error, results, field) {
+        if (error) {
+            throw error;
+        }
+        // 건우오빠가 해오면 됩니다.
+        // var title = ``;
+        // var nav = `<nav>
+        //     <h2>정보 관리</h2>
+        //     <p id="side-list"><a href="/my_info">내 정보</a></p>
+        //     <p id="side-list"><a href="/my_info/0">알림</a></p>
+        //     <p id="side-list"><a href="/my_info/1">내가 쓴 글</a></p>
+        //     <p id="side-list"><a href="/my_info/2">내가 쓴 댓글</a></p>
+        //     </nav>`;
+        // var content = template.myinfo(results);
+        // var html = template.basic(title, login, nav, content);
+        // response.send(html);
+        console.log(sql);
+    });
+});
+
+router.get('/alarm', function(request, response){
+    // 기조가 할 일
+});
+router.get('/mypost', function (request, response){
+    // 가조가 할 일
+});
+router.get('/mycomment', function (request, response){
+    // 가조가 할 일
 });
 
 module.exports = router;
