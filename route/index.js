@@ -6,11 +6,11 @@ var auth = require('../lib/auth.js');
 router.get('/', function(request, response){
     var title = ``;
     var nav = `<nav>
-        <h2>게시판</h2>
-        <p id="side-list"><a href="/board/0">공지사항</a></p>
-        <p id="side-list"><a href="/board/1">자유게시판</a></p>
-        <p id="side-list"><a href="/board/2">익명게시판</a></p>
-        </nav>`;
+                <h2>게시판</h2>
+                <p id="side-list"><a href="/board/notice/1">공지사항</a></p>
+                <p id="side-list"><a href="/board/free/1">자유게시판</a></p>
+                <p id="side-list"><a href="/board/anonymous/1">익명게시판</a></p>
+                </nav>`;
     var content = `<div id="content"><img src="/icebear.png" width=500px></div>`;
     var login = auth.statusUI(request, response);
     html = template.basic(title, login, nav, content);

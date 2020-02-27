@@ -215,7 +215,7 @@ a:hover {
     height: 50px;
 }
 
-#btn_reject{
+#btn_reject, #btn_out{
     color: black;
     background-color: white;
     width:50px;
@@ -236,4 +236,14 @@ a:hover {
 .pagination>li.active>a:hover{
     background: #333333;
     border-color: #333333;
+}
+
+/* 게시글 목록으로 가는 버튼 */
+#to_list{
+    text-align:right;
+}
+
+/* /my_info/alarm */
+#alarm_list{
+    text-align: left;
 }

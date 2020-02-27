@@ -43,12 +43,14 @@ app.get('*', function (request, response, next) {
 //route, routing
 var indexRouter = require('./route/index');
 var boardRouter = require('./route/board');
+var commentRouter = require('./route/comment');
 var loginRouter = require('./route/auth')(passport);
 var myinfoRouter = require('./route/my_info');
 var adminRouter = require('./route/admin');
 
 app.use('/', indexRouter);
 app.use('/board', boardRouter);
+app.use('/comment', commentRouter);
 app.use('/auth', loginRouter);
 app.use('/my_info', myinfoRouter);
 app.use('/admin', adminRouter);
