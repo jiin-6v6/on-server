@@ -47,6 +47,7 @@ var commentRouter = require('./route/comment');
 var loginRouter = require('./route/auth')(passport);
 var myinfoRouter = require('./route/my_info');
 var adminRouter = require('./route/admin');
+var reportRouter = require('./route/report');
 
 app.use('/', indexRouter);
 app.use('/board', boardRouter);
@@ -54,6 +55,7 @@ app.use('/comment', commentRouter);
 app.use('/auth', loginRouter);
 app.use('/my_info', myinfoRouter);
 app.use('/admin', adminRouter);
+app.use('/report', reportRouter);
 
 app.use(function (req, res, next) {
     res.status(404).send('Sorry cant find that!');

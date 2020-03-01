@@ -162,7 +162,7 @@ router.get('/:boardId/0/:postId', function (request, response) {
         return false;
     }
     var boardId = sanitizeHtml(request.params.boardId);
-    var postId = sanitizeHtml(request.params.postId);
+    var postId = Number(sanitizeHtml(request.params.postId));
 
     if (boardId != 'notice' && boardId != 'free' && boardId != 'anonymous') {
         wrongPath = true;
@@ -193,14 +193,13 @@ router.get('/:boardId/0/:postId', function (request, response) {
 
         var content = template.look_post(request, results);       
 
-        // 지인아 댓글 나올 수 있게 좀 해봐라
         var sql = 'SELECT * FROM comment WHERE post_id=? ORDER BY time DESC';
         conn.query(sql, [postId], function (error2, results2) {
             if (error2) {
                 console.log(error2);
                 throw error2;
             }
-            content += template.comment(request, results2, boardId, postId);
+            content += template.comment_list_update(request, results2, boardId, postId, null);
 
             var html = template.basic(title, login, nav, content);
             response.send(html);
@@ -215,7 +214,7 @@ router.post('/update/:boardId/:postId', function (request, response) {
     }
 
     var boardId = sanitizeHtml(request.params.boardId);
-    var postId = sanitizeHtml(request.params.postId);
+    var postId = Number(sanitizeHtml(request.params.postId));
 
     if (boardId != 'notice' && boardId != 'free' && boardId != 'anonymous') {
         wrongPath = true;
@@ -224,7 +223,7 @@ router.post('/update/:boardId/:postId', function (request, response) {
     }
 
     var sql = 'SELECT * FROM post WHERE board_id=? AND id=?'
-    conn.query(sql, [boardId, postId], function (error, results, field) {
+    conn.query(sql, [boardId, postId], function (error, results) {
         if (error) {
             throw error;
         }
@@ -254,7 +253,7 @@ router.post('/update_process/:postId', function (request, response) {
         return false;
     }
 
-    var postId = sanitizeHtml(request.params.postId);
+    var postId = Number(sanitizeHtml(request.params.postId));
 
     var post = request.body;
     var boardId = post.category;
@@ -268,8 +267,8 @@ router.post('/update_process/:postId', function (request, response) {
         return false;
     }
 
-    var sql = 'SELECT * FROM post WHERE id=' + postId;
-    conn.query(sql, function (error, results) {
+    var sql = 'SELECT * FROM post WHERE id=?';
+    conn.query(sql, [postId], function (error, results) {
         if (error) {
             throw error;
         }
@@ -282,13 +281,20 @@ router.post('/update_process/:postId', function (request, response) {
             response.redirect('/board/' + boardId + '/1');
             return false;
         }
-        var sql = 'UPDATE post SET post_title=?, post_content=?, board_id=? WHERE id=?';
+        var sql = 'UPDATE post SET post_title=?, post_content=?, board_id=?, time=CURRENT_TIMESTAMP, isUpdate=1 WHERE id=?';
         conn.query(sql, [post_title, content, boardId, postId], function (error2, results2) {
             if (error2) {
                 console.log(error2);
                 response.status(500).send('Internal Server Error');
             }
             else {
+                var sql = 'UPDATE comment SET board_id=? WHERE post_id=?';
+                conn.query(sql, [boardId, postId], function(error3, results3){
+                    if(error3){
+                        console.log(error3);
+                        response.status(500).send('Internal Server Error');
+                    }
+                })
                 response.redirect('/board/' + boardId + '/1');
             }
         });
@@ -318,7 +324,7 @@ router.post('/delete/:boardId/:postId', function (request, response) {
             throw error;
         }
         if (!results[0]) {    // 존재하지 않는 게시글을 지우려고 했을 때
-            response.redirect('/board/' + boardId + '/' + postId);
+            response.redirect('/board/' + boardId + '/0/' + postId);
             return false
         }
         if (request.user.isAdmin) { // admin mode
@@ -332,8 +338,8 @@ router.post('/delete/:boardId/:postId', function (request, response) {
                     // response.redirect('/admin/1');
                 }
             });
-            var sql = 'UPDATE report SET state=1 WHERE post_id=' + postId;
-            conn.query(sql, function (error3, results3) {
+            var sql = 'UPDATE report SET state=1 WHERE comment_id=0 AND post_id=?';
+            conn.query(sql, [postId], function (error3, results3) {
                 if (error3) {
                     console.log(error3);
                     response.status(500).send('Internal Server Error');
@@ -363,7 +369,7 @@ router.post('/delete/:boardId/:postId', function (request, response) {
                 }
                 response.redirect('/board/' + boardId + '/1');
             }
-        })
+        });
     });
 });
 

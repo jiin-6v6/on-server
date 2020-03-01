@@ -34,29 +34,37 @@ router.get('/:report_page', function (request, response) {
     var content = ``;
     var report_page = sanitizeHtml(request.params.report_page);
     report_page = Number(report_page);
-    var sql = "SELECT * FROM report WHERE state=0";
+    var sql = "SELECT * FROM report WHERE state=0 AND comment_id>0";
     conn.query(sql, function (error, results, field) {
         if (error) {
             throw error;
         }
-        if (results.length==0){
-            content = `<div id="content">
-            <div>
-            신고가 존재하지 않습니다.
-            </div></div>`;
-        }
-        else{
-            var total_page = parseInt((results.length-1)/5) + 1;
-            if (report_page > total_page){
-                wrongPath = true;
-                response.redirect('/');
-                return false;
+        var sql2 = "SELECT * FROM report WHERE state=0 AND comment_id=0";
+        conn.query(sql2,function(error2,results2){
+            if (error2) {
+                throw error2;
             }
-            content = template.reportlist(results, report_page, total_page);
-            content += template.pagination_reportlist(report_page, total_page);
-        }
-        var html = template.basic(title, login, nav, content);
-        response.send(html);
+            var array = results.concat(results2);
+            if (array.length==0){
+                content = `<div id="content">
+                <div>
+                신고가 존재하지 않습니다.
+                </div></div>`;
+            }
+            else{
+                var total_page = parseInt((array.length-1)/5) + 1;
+                if (report_page > total_page){
+                    wrongPath = true;
+                    response.redirect('/');
+                    return false;
+                }
+                content = template.reportlist(array, report_page, total_page);
+                content += template.pagination_reportlist(report_page, total_page);
+            }
+            var html = template.basic(title, login, nav, content);
+            response.send(html);
+        })
+        
     });
 });
 
@@ -99,7 +107,7 @@ router.get('/report_cnt/:report_cnt_page', function(request, response){
         <p id="side-list"><a href="/admin/1">신고</a></p>
         <p id="side-list"><a href="/admin/report_cnt/1">회원 신고 누적횟수</a></p>
         </nav>`;
-    var content = `잘 들어오냐고`;
+    var content = ``;
 
 
     var sql = "SELECT user_info.id AS id, report.report_content AS report_content, user_info.report_cnt AS report_cnt, report.time AS time FROM user_info INNER JOIN report ON user_info.id = report.reported_id WHERE report.state=1 AND user_info.state=0 AND report_cnt>=3 ORDER BY report_cnt DESC, id ASC";
@@ -116,7 +124,6 @@ router.get('/report_cnt/:report_cnt_page', function(request, response){
             response.send(html);
         }
         else{
-            content = `ㅂㄷㅂㄷ`;
             var sql2 = "SELECT count(*) AS id_cnt FROM user_info WHERE report_cnt>=3 AND state=0"
             conn.query(sql2, function(error2, results2, field){
                 if (error2){

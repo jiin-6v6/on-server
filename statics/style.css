@@ -62,7 +62,7 @@ a:hover {
     color: #353434;
 }
 
-#btn_login, #btn_logout, #btn_my_info, #btn_write, #btn_update, #btn_find_id, #btn_find_pwd, #btn_admin{
+#btn_login, #btn_logout, #btn_my_info, #btn_write, #btn_update, #btn_find_id, #btn_find_pwd, #btn_admin, #btn_comment_update{
     color: rgb(240, 240, 240);
     font-weight: 700;
     background-color: #333333;
@@ -215,7 +215,7 @@ a:hover {
     height: 50px;
 }
 
-#btn_reject, #btn_out{
+#btn_reject, #btn_out, #btn_view, #btn_delete{
     color: black;
     background-color: white;
     width:50px;

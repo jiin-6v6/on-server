@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var passport = require('passport');
+var crypto = require('crypto');
 var session = require('express-session');
 var localStrategy = require('passport-local').Strategy;
 var qs = require('querystring');
@@ -87,57 +88,82 @@ module.exports = function (passport) {
     router.get('/register', function (request, response) {
         if (auth.isLogin(request, response)) {
             response.redirect('/');
+            return false;
         }
-        else {
-            var title = '';
-            var nav = '';
-            var login = `
-            <form action="/auth/login">
-            <button onmouseover="this.style.color='#cccccc'" onmouseout="this.style.color=''" class="btn"
-            type="submit" id="btn_login">로그인</button>
-            </form>`;
-            var content = `
-            <div id="login_content">
-            <h3 style='text-align: left; padding:20px 0 0 30px; margin:0;'>회원가입</h3><hr>
-            <form id="login_process" action="http://localhost:3000/main.js" method="post">
-              <ul id = "regist_list">
-                <li>
-                  <input class="input_box" type="text" name="auth_name" placeholder="이름">
-                </li>
-                <form action="check_id" style="margin:0; padding: 0;">
-                  <li style="position:relative;">
-                    <input class="input_box" type="text" name="auth_id" placeholder="ID">
-                    <button href="#" class="btn regist_btn_a">중복확인</button>
-                  </li>
-                </form>
-                <li>
-                  <input class="input_box" type="password" name="auth_pwd" placeholder="PASSWORD">
-                </li>
-                <li>
-                  <input class="input_box" type="password" name="auth_pwd_check" placeholder="PASSWORD 확인">
-                </li>
-                <li>
-                  <input class="input_box" type="text" name="auth_birth" placeholder="생년월일 8자리 ex)19950515" maxlength="8">
-                </li>
-                <form action="email_send" style="margin:0; padding: 0;">
-                  <li style="position:relative;">
-                    <input class="input_box" type="text" name="auth_email" placeholder="이메일">
-                    <button href="#" class="btn regist_btn_a" style="font-size: 12px; padding:0;">인증번호보내기</button>
-                  </li>
-                </form>
-                <form action="email_check" style="margin:0; padding: 0;">
-                  <li style="position:relative;">
-                    <input class="input_box" type="text" name="auth_email_check" placeholder="인증번호">
-                    <button href="#" class="btn regist_btn_a">확인</button>
-                  </li>
-                </form>
-                <button href="#" class="btn regist_btn_a" style="width:100%; position:static; margin-top: 30px;">회원가입</button>
-              </ul>
-            </form><hr></div>`;
+        var title = '';
+        var nav = '';
+        var login = `
+        <form action="/auth/login">
+        <button onmouseover="this.style.color='#cccccc'" onmouseout="this.style.color=''" class="btn"
+        type="submit" id="btn_login">로그인</button>
+        </form>`;
+        var content = `
+        <div id="login_content">
+        <h3 style='text-align: left; padding:20px 0 0 30px; margin:0;'>회원가입</h3><hr>
+        <form id="register_process" action="/auth/register_process" method="post">
+          <ul id = "regist_list">
+            <li>
+              <input class="input_box" type="text" name="auth_name" placeholder="이름">
+            </li>
+            <div style="margin:0; padding: 0;">
+              <li style="position:relative;">
+                <input class="input_box" type="text" name="auth_id" placeholder="ID">
+                <a href="#" onClick="alert('중복확인 test');return;" class="btn regist_btn_a">중복확인</a>
+              </li>
+            </div>
+            <li>
+              <input class="input_box" type="password" name="auth_pwd" placeholder="PASSWORD">
+            </li>
+            <li>
+              <input class="input_box" type="password" name="auth_pwd_check" placeholder="PASSWORD 확인">
+            </li>
+            <li>
+              <input class="input_box" type="text" name="auth_birth" placeholder="생년월일 ex)1999-05-05" maxlength="10">
+            </li>
+            <div style="margin:0; padding: 0;">
+              <li style="position:relative;">
+                <input class="input_box" type="text" name="auth_email" placeholder="이메일">
+                <button formaction="eamil_send" class="btn regist_btn_a" style="font-size: 12px; padding:0;">인증번호보내기</button>
+              </li>
+            </div>
+            <div style="margin:0; padding: 0;">
+              <li style="position:relative;">
+                <input class="input_box" type="text" name="auth_email_check" placeholder="인증번호">
+                <button href="#" class="btn regist_btn_a">확인</button>
+              </li>
+            </div>
+            <button class="btn regist_btn_a" style="width:100%; position:static; margin-top: 30px;">회원가입</button>
+          </ul>
+        </form><hr></div>`;
 
-            var html = template.basic(title, login, nav, content);
-            response.send(html);
-        }
+        var html = template.basic(title, login, nav, content);
+        response.send(html);
+    });
+
+    router.post('/register_process', function (request, response) {
+        var post = request.body;
+        var salt = '';
+        var hashingPwd = '';
+        crypto.randomBytes(64, (err, buf) => {
+            if (err) throw err;
+            salt = buf.toString('hex');
+
+            // hashing
+            crypto.pbkdf2(post.auth_pwd, salt, 112311, 64, 'sha512', (err, derivedKey) => {
+                if (err) throw err;
+                hashingPwd = derivedKey.toString('hex');
+
+                // sql insert
+                var insert_sql = 'INSERT INTO user_info (id, salt, pwd, name, birth, email) VALUES (?,?,?,?,?,?);';
+                conn.query(insert_sql, [post.auth_id, salt, hashingPwd, post.auth_name, post.auth_birth, post.auth_email], function (error, users) {
+                    if (error) {
+                        throw error;
+                    }
+                    response.redirect('/auth/login');
+                })
+            });
+        })
+
     });
 
     router.get('/find_info', function (request, response) {
