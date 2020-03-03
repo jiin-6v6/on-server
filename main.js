@@ -21,6 +21,7 @@ app.use(compression());
 app.use(session({
     secret: 'asadlfkj!@#!@#dfgasdg',
     resave: false,
+    cookie: { secure: false, maxAge: 7200000 },
     saveUninitialized: true,
     store: new MySQLStore({
         host: 'localhost',

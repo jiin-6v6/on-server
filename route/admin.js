@@ -16,11 +16,11 @@ var conn = mysql.createConnection({
 conn.connect();
 
 router.get('/:report_page', function (request, response) {
-    if (!auth.isLogin) {
+    if (!auth.isLogin(request, response)) {
         response.redirect('/');
         return false;
     }
-    if (!request.user.isAdmin){
+    if (!request.user.isAdmin) {
         response.redirect('/');
         return false;
     }
@@ -40,20 +40,20 @@ router.get('/:report_page', function (request, response) {
             throw error;
         }
         var sql2 = "SELECT * FROM report WHERE state=0 AND comment_id=0";
-        conn.query(sql2,function(error2,results2){
+        conn.query(sql2, function (error2, results2) {
             if (error2) {
                 throw error2;
             }
             var array = results.concat(results2);
-            if (array.length==0){
+            if (array.length == 0) {
                 content = `<div id="content">
                 <div>
                 신고가 존재하지 않습니다.
                 </div></div>`;
             }
-            else{
-                var total_page = parseInt((array.length-1)/5) + 1;
-                if (report_page > total_page){
+            else {
+                var total_page = parseInt((array.length - 1) / 5) + 1;
+                if (report_page > total_page) {
                     wrongPath = true;
                     response.redirect('/');
                     return false;
@@ -64,35 +64,35 @@ router.get('/:report_page', function (request, response) {
             var html = template.basic(title, login, nav, content);
             response.send(html);
         })
-        
+
     });
 });
 
-router.post('/reject',function(request,response){
-    if (!auth.isLogin) {
+router.post('/reject', function (request, response) {
+    if (!auth.isLogin(request, response)) {
         response.redirect('/');
         return false;
     }
-    if (!request.user.isAdmin){
+    if (!request.user.isAdmin) {
         response.redirect('/');
         return false;
     }
     var post = request.body;
     var sql = "UPDATE report SET state=2 WHERE report_id=?";
-    conn.query(sql, [post.report_id], function(error, results, field){
+    conn.query(sql, [post.report_id], function (error, results, field) {
         if (error) {
             throw error;
         }
-        response.redirect('/admin/'+post.report_page);
+        response.redirect('/admin/' + post.report_page);
     });
 });
 
-router.get('/report_cnt/:report_cnt_page', function(request, response){
-    if (!auth.isLogin) {
+router.get('/report_cnt/:report_cnt_page', function (request, response) {
+    if (!auth.isLogin(request, response)) {
         response.redirect('/');
         return false;
     }
-    if (!request.user.isAdmin){
+    if (!request.user.isAdmin) {
         response.redirect('/');
         return false;
     }
@@ -115,7 +115,7 @@ router.get('/report_cnt/:report_cnt_page', function(request, response){
         if (error) {
             throw error;
         }
-        if (results.length==0){
+        if (results.length == 0) {
             content = `<div id="content">
             <div>
             누적된 신고가 존재하지 않습니다.
@@ -123,15 +123,15 @@ router.get('/report_cnt/:report_cnt_page', function(request, response){
             var html = template.basic(title, login, nav, content);
             response.send(html);
         }
-        else{
+        else {
             var sql2 = "SELECT count(*) AS id_cnt FROM user_info WHERE report_cnt>=3 AND state=0"
-            conn.query(sql2, function(error2, results2, field){
-                if (error2){
+            conn.query(sql2, function (error2, results2, field) {
+                if (error2) {
                     throw error2;
                 }
                 var total_reported_id = results2[0].id_cnt;
-                var total_page = parseInt((total_reported_id-1)/3) + 1;
-                if (report_cnt_page > total_page){
+                var total_page = parseInt((total_reported_id - 1) / 3) + 1;
+                if (report_cnt_page > total_page) {
                     wrongPath = true;
                     response.redirect('/');
                     return false;
@@ -143,35 +143,28 @@ router.get('/report_cnt/:report_cnt_page', function(request, response){
             });
         }
     });
-
-
-
-
 });
 
 // router.get('/report_cnt/:report_cnt_page', function (request, response) {
-    
-    
-    
-    
+
 // });
 
-router.post('/out',function(request,response){
-    if (!auth.isLogin) {
+router.post('/out', function (request, response) {
+    if (!auth.isLogin(request, response)) {
         response.redirect('/');
         return false;
     }
-    if (!request.user.isAdmin){
+    if (!request.user.isAdmin) {
         response.redirect('/');
         return false;
     }
     var post = request.body;
     var sql = "UPDATE user_info SET state=2 WHERE id=?";
-    conn.query(sql, [post.report_id], function(error, results, field){
+    conn.query(sql, [post.report_id], function (error, results, field) {
         if (error) {
             throw error;
         }
-        response.redirect('/admin/report_cnt/'+post.report_cnt_page);
+        response.redirect('/admin/report_cnt/' + post.report_cnt_page);
     });
 });
 

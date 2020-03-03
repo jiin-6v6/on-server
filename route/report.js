@@ -16,7 +16,7 @@ var conn = mysql.createConnection({
 });
 conn.connect();
 
-router.post('/add', function(request, response){
+router.post('/add', function (request, response) {
     if (!auth.isLogin(request, response)) {
         response.redirect('/');
         return false;
@@ -30,7 +30,7 @@ router.post('/add', function(request, response){
     var report_content = post.report_content;
     var commentId = post.commentId;
 
-    if(request.user.id !== reporter_id){    // 로그인한 아이디와 신고자 아이디가 불일치한 경우
+    if (request.user.id !== reporter_id) {    // 로그인한 아이디와 신고자 아이디가 불일치한 경우
         console.log('something wrong');
         response.redirect('/');
         return false;
@@ -38,31 +38,31 @@ router.post('/add', function(request, response){
     // 댓글 신고
     var sql = 'SELECT comment_writer FROM comment WHERE id=?';
     var id = commentId;
-    if(commentId === "0"){    // 게시글 신고
+    if (commentId === "0") {    // 게시글 신고
         sql = 'SELECT post_writer FROM post WHERE id=?';
         id = postId;
     }
-    
-    conn.query(sql, [id], function(error, results){
-        if(error){
+
+    conn.query(sql, [id], function (error, results) {
+        if (error) {
             console.log(error);
             throw error;
         }
-        if(!results[0]){    // 게시글 or 댓글이 존재하지 않는 경우
+        if (!results[0]) {    // 게시글 or 댓글이 존재하지 않는 경우
             console.log('something wrong');
             response.redirect('/');
             return false;
         }
         var reported_id = '';
-        if(commentId === "0"){      // 게시글 신고
+        if (commentId === "0") {      // 게시글 신고
             reported_id = results[0].post_writer;
         }
-        else{                       // 댓글 신고
+        else {                       // 댓글 신고
             reported_id = results[0].comment_writer;
         }
         var sql = 'INSERT INTO report (board_id, post_id, comment_id, reported_id, reporter_id, report_content) VALUES (?, ?, ?, ?, ?, ?)';
-        conn.query(sql, [boardId, postId, commentId, reported_id, reporter_id, report_content], function(error2, results2){
-            if(error2){
+        conn.query(sql, [boardId, postId, commentId, reported_id, reporter_id, report_content], function (error2, results2) {
+            if (error2) {
                 console.log(error2);
                 throw error2;
             }
@@ -73,7 +73,7 @@ router.post('/add', function(request, response){
     })
 });
 
-router.get('/:boardId/:postId/:commentId', function(request, response){     // 댓글을 신고한 경우
+router.get('/:boardId/:postId/:commentId', function (request, response) {     // 댓글을 신고한 경우
     if (!auth.isLogin(request, response)) {
         response.redirect('/');
         return false;
@@ -89,7 +89,7 @@ router.get('/:boardId/:postId/:commentId', function(request, response){     // �
     }
 
     var sql = 'SELECT * FROM comment WHERE id=?';
-    conn.query(sql, [commentId], function(error, results){
+    conn.query(sql, [commentId], function (error, results) {
         if (error) {
             throw error;
         }
@@ -101,7 +101,7 @@ router.get('/:boardId/:postId/:commentId', function(request, response){     // �
         }
 
         var comment_writer = `댓글 작성자 : ${results[0].comment_writer}<br>`;
-        if(boardId === 'anonymous'){
+        if (boardId === 'anonymous') {
             comment_writer = '';
         }
         var html = `<div id=content>
@@ -122,7 +122,7 @@ router.get('/:boardId/:postId/:commentId', function(request, response){     // �
     });
 });
 
-router.get('/:boardId/:postId', function(request, response){        // 게시글 신고한 경우
+router.get('/:boardId/:postId', function (request, response) {        // 게시글 신고한 경우
     if (!auth.isLogin(request, response)) {
         response.redirect('/');
         return false;
@@ -137,7 +137,7 @@ router.get('/:boardId/:postId', function(request, response){        // 게시글
     }
 
     var sql = 'SELECT * FROM post WHERE id=?';
-    conn.query(sql, [postId], function(error, results){
+    conn.query(sql, [postId], function (error, results) {
         if (error) {
             throw error;
         }
@@ -149,7 +149,7 @@ router.get('/:boardId/:postId', function(request, response){        // 게시글
         }
 
         var post_writer = `게시글 작성자 : ${results[0].post_writer}<br>`;
-        if(boardId === 'anonymous'){
+        if (boardId === 'anonymous') {
             post_writer = '';
         }
         var html = `<div id=content>

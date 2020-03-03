@@ -191,18 +191,27 @@ router.get('/:boardId/0/:postId', function (request, response) {
             return false;
         }
 
-        var content = template.look_post(request, results);       
+        var content = template.look_post(request, results);
 
-        var sql = 'SELECT * FROM comment WHERE post_id=? ORDER BY time DESC';
+        var sql = 'SELECT * FROM comment WHERE post_id=? AND parent_id=0 ORDER BY id DESC';
         conn.query(sql, [postId], function (error2, results2) {
             if (error2) {
                 console.log(error2);
                 throw error2;
             }
-            content += template.comment_list_update(request, results2, boardId, postId, null);
+            var sql = 'SELECT * FROM comment WHERE post_id=? AND parent_id>0 ORDER BY id DESC';
+            conn.query(sql, [postId], function (error3, results3) {
+                if (error3) {
+                    console.log(error3);
+                    throw error3;
+                }
+                var arr = results2.concat(results3);
+                content += template.comment_list_update(request, arr, boardId, postId, null);
 
-            var html = template.basic(title, login, nav, content);
-            response.send(html);
+                var html = template.basic(title, login, nav, content);
+                response.send(html);
+            });
+
         });
     });
 });
@@ -289,8 +298,8 @@ router.post('/update_process/:postId', function (request, response) {
             }
             else {
                 var sql = 'UPDATE comment SET board_id=? WHERE post_id=?';
-                conn.query(sql, [boardId, postId], function(error3, results3){
-                    if(error3){
+                conn.query(sql, [boardId, postId], function (error3, results3) {
+                    if (error3) {
                         console.log(error3);
                         response.status(500).send('Internal Server Error');
                     }
@@ -373,6 +382,8 @@ router.post('/delete/:boardId/:postId', function (request, response) {
     });
 });
 
+module.exports = router;
+
 // comment 처리 하는 과정
 // router.post('/comment_process', function (request, response) {
 //     if (!auth.isLogin(request, response)) {
@@ -414,4 +425,3 @@ router.post('/delete/:boardId/:postId', function (request, response) {
 //         });
 //     });
 // });
-module.exports = router;

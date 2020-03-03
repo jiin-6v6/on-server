@@ -2,8 +2,12 @@ var express = require('express');
 var router = express.Router();
 var qs = require('querystring');
 var sanitizeHtml = require('sanitize-html');
-var template = require('../lib/template.js');
 var mysql = require('mysql');
+var fetch = require('node-fetch');
+var bodyParser = require("body-parser");
+var urlencodedParser = bodyParser.json({ extended: false });
+var crypto = require('crypto');
+var template = require('../lib/template.js');
 var auth = require('../lib/auth.js');
 
 // mysql connection
@@ -64,33 +68,32 @@ router.post('/update', function (request, response) {
 });
 
 router.post('/update_process', function (request, response) {
-    if (!auth.isLogin(request, response)) {
-        response.redirect('/');
-        return false;
-    }
-
     var post = request.body;
-    console.log(post);
-    var sql = `INSERT INTO user_info VALUES (?, ?, 'myname', ?,'myemail@gmail.com', 0, 0);`
-    conn.
-        conn.query(sql, [post.auth_id, post.auth_pwd, post.auth_birth, post.auth_email,], function (error, results, field) {
-            if (error) {
-                throw error;
-            }
-            // 건우오빠가 해오면 됩니다.
-            // var title = ``;
-            // var nav = `<nav>
-            //     <h2>정보 관리</h2>
-            //     <p id="side-list"><a href="/my_info">내 정보</a></p>
-            //     <p id="side-list"><a href="/my_info/0">알림</a></p>
-            //     <p id="side-list"><a href="/my_info/1">내가 쓴 글</a></p>
-            //     <p id="side-list"><a href="/my_info/2">내가 쓴 댓글</a></p>
-            //     </nav>`;
-            // var content = template.myinfo(results);
-            // var html = template.basic(title, login, nav, content);
-            // response.send(html);
-            console.log(sql);
-        });
+    var salt = '';
+    var hashingPwd = '';
+
+    var selectSalt_sql = 'SELECT salt FROM user_info WHERE id=?';
+    var update_sql = 'UPDATE user_info SET id=?, pwd=?, birth=?, email=? WHERE id=?';
+
+    // salt 값 탐색
+    conn.query(selectSalt_sql, [request.user.id], function (error1, data1) {
+        if (error1) throw error1;
+        salt = data1[0].salt;
+
+        // password hashing
+        crypto.pbkdf2(post.auth_pwd, salt, 112311, 64, 'sha512', (err, derivedKey) => {
+            if (err) throw err;
+            hashingPwd = derivedKey.toString('hex');
+
+            // update
+            conn.query(update_sql, [post.auth_id, hashingPwd, post.auth_birth, post.auth_email, request.user.id], function (error2, data2) {
+                if (error2) throw error2;
+                response.redirect('/my_info');
+                // 아이디 변경시 세션 수정해야됨 근데 sql 세션id값이랑 web 세션id값이랑 다름
+            })
+        }
+        )
+    });
 });
 
 router.get('/alarm/:this_page', function (request, response) {
@@ -111,17 +114,17 @@ router.get('/alarm/:this_page', function (request, response) {
         </nav>`;
     var content = ``;
     var sql = 'SELECT * FROM alarm WHERE alarmed_id=? AND isCheck=0 AND alarmed_id != alarming_id';
-    conn.query(sql, [request.user.id], function(error, results){
-        if(error){
+    conn.query(sql, [request.user.id], function (error, results) {
+        if (error) {
             console.log(error);
             throw error;
         }
-        if(!results[0]){
-            content=`<div id="content">알림이 없습니다.</div>`;
+        if (!results[0]) {
+            content = `<div id="content">알림이 없습니다.</div>`;
         }
-        else{  
-            var total_page = parseInt((results.length-1)/10) + 1;
-            if (this_page > total_page){
+        else {
+            var total_page = parseInt((results.length - 1) / 10) + 1;
+            if (this_page > total_page) {
                 wrongPath = true;
                 response.redirect('/');
                 return false;
@@ -131,40 +134,40 @@ router.get('/alarm/:this_page', function (request, response) {
         }
         var html = template.basic(title, login, nav, content);
         response.send(html);
-    });    
+    });
 });
 
-router.post('/alarm/view_process',function(request,response){
-    if (!auth.isLogin) {
+router.post('/alarm/view_process', function (request, response) {
+    if (!auth.isLogin(request, response)) {
         response.redirect('/');
         return false;
     }
     var post = request.body;
     var sql = "UPDATE alarm SET isCheck=1 WHERE comment_id=? AND alarmed_id=?";
-    conn.query(sql, [post.comment_id, post.alarmed_id], function(error, results, field){
+    conn.query(sql, [post.comment_id, post.alarmed_id], function (error, results, field) {
         if (error) {
             throw error;
         }
-        response.redirect('/board/'+post.board_id+'/0/'+post.post_id);
+        response.redirect('/board/' + post.board_id + '/0/' + post.post_id);
     });
 });
 
-router.post('/alarm/delete_process',function(request,response){
-    if (!auth.isLogin) {
+router.post('/alarm/delete_process', function (request, response) {
+    if (!auth.isLogin(request, response)) {
         response.redirect('/');
         return false;
     }
     var post = request.body;
     var sql = "UPDATE alarm SET isCheck=1 WHERE comment_id=? AND alarmed_id=?";
-    conn.query(sql, [post.comment_id, post.alarmed_id], function(error, results, field){
+    conn.query(sql, [post.comment_id, post.alarmed_id], function (error, results, field) {
         if (error) {
             throw error;
         }
-        response.redirect('/my_info/alarm/'+post.this_page);
+        response.redirect('/my_info/alarm/' + post.this_page);
     });
 });
 
-router.get('/mypost/:this_page', function (request, response){
+router.get('/mypost/:this_page', function (request, response) {
     if (!auth.isLogin(request, response)) {
         response.redirect('/');
         return false;
@@ -188,8 +191,8 @@ router.get('/mypost/:this_page', function (request, response){
             <p id="side-list"><a href="/my_info/mycomment/1">내가 쓴 댓글</a></p>
             </nav>`;
         if (results[0]) {
-            var total_page = parseInt((results.length-1)/10) + 1;
-            if (this_page > total_page){
+            var total_page = parseInt((results.length - 1) / 10) + 1;
+            if (this_page > total_page) {
                 wrongPath = true;
                 response.redirect('/');
                 return false;
@@ -232,8 +235,8 @@ router.get('/mycomment/:this_page', function (request, response) {
             <p id="side-list"><a href="/my_info/mycomment/1">내가 쓴 댓글</a></p>
             </nav>`;
         if (results[0]) {
-            var total_page = parseInt((results.length-1)/10) + 1;
-            if (this_page > total_page){
+            var total_page = parseInt((results.length - 1) / 10) + 1;
+            if (this_page > total_page) {
                 wrongPath = true;
                 response.redirect('/');
                 return false;
@@ -253,4 +256,45 @@ router.get('/mycomment/:this_page', function (request, response) {
     });
 });
 
+router.post('/register_process', function (request, response) {
+    var post = request.body;
+    var salt = '';
+    var hashingPwd = '';
+    crypto.randomBytes(64, (err, buf) => {
+        if (err) throw err;
+        salt = buf.toString('hex');
+
+        // hashing
+        crypto.pbkdf2(post.auth_pwd, salt, 112311, 64, 'sha512', (err, derivedKey) => {
+            if (err) throw err;
+            hashingPwd = derivedKey.toString('hex');
+
+            // sql insert
+            var insert_sql = 'INSERT INTO user_info (id, salt, pwd, name, birth, email) VALUES (?,?,?,?,?,?);';
+            conn.query(insert_sql, [post.auth_id, salt, hashingPwd, post.auth_name, post.auth_birth, post.auth_email], function (error, users) {
+                if (error) {
+                    throw error;
+                }
+                response.redirect('/auth/login');
+            })
+        });
+    })
+
+});
+
+router.post('/checkId', urlencodedParser, function (request, response) {
+    var checkingId = request.body.id;
+    var success_sql = 'SELECT EXISTS(SELECT * FROM user_info WHERE id =?) AS SUCCESS';
+    conn.query(success_sql, [checkingId], function (error, results) {
+        if (error) {
+            throw error;
+        }
+        console.log(results[0].SUCCESS); // 있으면 1 없으면 0 return
+        if (results[0].SUCCESS) {
+            response.send({ msg: '이미 사용중인 아이디입니다.', value: false });
+        } else {
+            response.send({ msg: '사용 가능한 아이디입니다.', value: true });
+        }
+    });
+});
 module.exports = router;
