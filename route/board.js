@@ -16,11 +16,13 @@ var conn = mysql.createConnection({
 });
 conn.connect();
 
-router.get('/write', function (request, response) {
+router.post('/write', function (request, response) {
     if (!auth.isLogin(request, response)) {
         response.redirect('/');
         return false;
     }
+    var post = request.body;
+    var boardId = post.boardId;
 
     var title = '';
     var login = auth.statusUI(request, response);
@@ -30,7 +32,7 @@ router.get('/write', function (request, response) {
                 <p id="side-list"><a href="/board/free/1">자유게시판</a></p>
                 <p id="side-list"><a href="/board/anonymous/1">익명게시판</a></p>
                 </nav>`;
-    var content = template.post_write_update(request, response, null, null);
+    var content = template.post_write_update(request, boardId, null, null);
     if (!content) {   // 조건에 걸려서 content==false인 경우
         response.redirect('/');
         return false;
@@ -81,9 +83,6 @@ router.post('/write_process', function (request, response) {
 
 // print out post list
 router.get('/:boardId/:this_page', function (request, response) {
-    // 기조가 할 일
-    // pagination 사용해서 예쁘게 나오게 해야함(lib/tenplate.js 참고)
-    // 알아서 정현언니랑 토의해보셔요
     if (!auth.isLogin(request, response)) {
         response.redirect('/');
         return false;
@@ -120,7 +119,8 @@ router.get('/:boardId/:this_page', function (request, response) {
             content = `
                 <div id="content">
                     <div id=board_write>
-                        <form action="/board/write">
+                        <form action="/board/write" method="POST">
+                            <input type="hidden" value="${boardId}" name="boardId">
                             <button onmouseover="this.style.color='#cccccc'" onmouseout="this.style.color=''" class="btn" type="submit" id="btn_write">글쓰기</button>
                         </form>
                     </div>` + template.postlist(results, boardId, this_page) + template.pagination_board(boardId, this_page, total_page) + `</div>`;
@@ -135,7 +135,8 @@ router.get('/:boardId/:this_page', function (request, response) {
             content = `
                 <div id="content">
                     <div id=board_write>
-                        <form action="/board/write">
+                        <form action="/board/write" method="POST">
+                            <input type="hidden" value="${boardId}" name="boardId">
                             <button onmouseover="this.style.color='#cccccc'" onmouseout="this.style.color=''" class="btn" type="submit" id="btn_write">글쓰기</button>
                         </form>
                     </div>` + template.postlist_anony(results, boardId, this_page) + template.pagination_board(boardId, this_page, total_page) + `</div>`;
@@ -144,7 +145,8 @@ router.get('/:boardId/:this_page', function (request, response) {
             content = `
                 <div id="content">
                     <div id=board_write>
-                        <form action="/board/write">
+                        <form action="/board/write" method="POST">
+                            <input type="hidden" value="${boardId}" name="boardId">
                             <button onmouseover="this.style.color='#cccccc'" onmouseout="this.style.color=''" class="btn" type="submit" id="btn_write">글쓰기</button>
                         </form>
                     </div>
@@ -170,6 +172,12 @@ router.get('/:boardId/0/:postId', function (request, response) {
         return false;
     }
 
+    var commentId = 0;
+    if(request.query !== {}){
+        commentId = request.query.commentId;
+    }
+
+
     var title = '';
     var nav = `<nav>
         <h2>게시판</h2>
@@ -187,7 +195,13 @@ router.get('/:boardId/0/:postId', function (request, response) {
 
         if (!results[0]) {
             wrongPath = true;
-            response.redirect('/board/' + boardId);
+            response.redirect('/board/' + boardId + '/1');
+            return false;
+        }
+
+        if (results[0].isDelete === 1){
+            console.log('something wrong');
+            response.redirect('/board/' + boardId + '/1');
             return false;
         }
 
@@ -206,7 +220,7 @@ router.get('/:boardId/0/:postId', function (request, response) {
                     throw error3;
                 }
                 var arr = results2.concat(results3);
-                content += template.comment_list_update(request, arr, boardId, postId, null);
+                content += template.comment_list_update(request, arr, boardId, postId, commentId, true);
 
                 var html = template.basic(title, login, nav, content);
                 response.send(html);
@@ -246,7 +260,7 @@ router.post('/update/:boardId/:postId', function (request, response) {
                 <p id="side-list"><a href="/board/anonymous/1">익명게시판</a></p>
                 </nav>`;
 
-        var content = template.post_write_update(request, response, postId, results);
+        var content = template.post_write_update(request, boardId, postId, results);
         if (!content) {   // 조건에 걸려서 content==false인 경우
             response.redirect('/board/' + boardId + '/' + postId);
             return false;
@@ -310,7 +324,6 @@ router.post('/update_process/:postId', function (request, response) {
     });
 });
 
-
 router.post('/delete/:boardId/:postId', function (request, response) {
     if (!auth.isLogin(request, response)) {
         response.redirect('/');
@@ -365,7 +378,7 @@ router.post('/delete/:boardId/:postId', function (request, response) {
                 return false;
             }
         }
-        var sql = 'DELETE FROM post WHERE id=?';
+        var sql = 'UPDATE post SET isDelete=1 WHERE id=?';
         conn.query(sql, [postId], function (error4, results4) {
             if (error4) {
                 console.log(error4);
@@ -383,45 +396,3 @@ router.post('/delete/:boardId/:postId', function (request, response) {
 });
 
 module.exports = router;
-
-// comment 처리 하는 과정
-// router.post('/comment_process', function (request, response) {
-//     if (!auth.isLogin(request, response)) {
-//         response.redirect('/');
-//         return false;
-//     }
-
-//     var post = request.body;
-//     var postId = post.post_id;
-//     var commentWriter = post.comment_writer;
-//     var boardId = post.board_id;
-//     var content = post.comment_content;
-
-//     if (boardId != 'notice' && boardId != 'free' && boardId != 'anonymous') {
-//         // category 지정 안됐을 때도 여기로 오는데 이거 alert로 처리하고 싶어요
-//         wrongPath = true;
-//         response.redirect('/');
-//         return false;
-//     }
-//     var sql = 'INSERT INTO comment (post_id, comment_writer, unknown, content) VALUES (?, ?, ?, ?)';
-//     conn.query(sql, [postId, commentWriter, boardId, content], function (error, results) {
-//         if (error) {
-//             throw error;
-//         }
-
-//         var sql = 'SELECT id FROM comment WHERE post_id=? AND comment_writer=? AND unknown=? AND content=? ORDER BY time DESC';
-//         conn.query(sql, [postId, commentWriter, boardId, content], function (error2, results2) {
-//             if (error2) {
-//                 throw error2;
-//             }
-//             if (!results2[0]) {
-//                 console.log('왜 결과가 없냐? INSERT 일 안하냐?');
-//                 response.redirect('/');
-//                 return false;
-//             }
-//             else {
-//                 response.redirect('/board/' + boardId + '/1');
-//             }
-//         });
-//     });
-// });

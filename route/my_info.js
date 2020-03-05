@@ -148,7 +148,7 @@ router.post('/alarm/view_process', function (request, response) {
         if (error) {
             throw error;
         }
-        response.redirect('/board/' + post.board_id + '/0/' + post.post_id);
+        response.redirect('/board/' + post.board_id + '/0/' + post.post_id + '?commentId=' + post.comment_id);
     });
 });
 
@@ -289,7 +289,6 @@ router.post('/checkId', urlencodedParser, function (request, response) {
         if (error) {
             throw error;
         }
-        console.log(results[0].SUCCESS); // 있으면 1 없으면 0 return
         if (results[0].SUCCESS) {
             response.send({ msg: '이미 사용중인 아이디입니다.', value: false });
         } else {
