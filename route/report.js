@@ -27,7 +27,7 @@ router.post('/add', function (request, response) {
     var postId = post.postId;
     var commentId = post.commentId;
     var reporter_id = post.reporter_id;
-    var report_content = post.report_content;
+    var report_reason = post.report_reason;
     var commentId = post.commentId;
 
     if (request.user.id !== reporter_id) {    // 로그인한 아이디와 신고자 아이디가 불일치한 경우
@@ -35,11 +35,12 @@ router.post('/add', function (request, response) {
         response.redirect('/');
         return false;
     }
+
     // 댓글 신고
-    var sql = 'SELECT comment_writer FROM comment WHERE id=?';
+    var sql = 'SELECT comment_writer, comment_content FROM comment WHERE id=?';
     var id = commentId;
     if (commentId === "0") {    // 게시글 신고
-        sql = 'SELECT post_writer FROM post WHERE id=?';
+        sql = 'SELECT post_writer, post_title, post_content FROM post WHERE id=?';
         id = postId;
     }
 
@@ -54,14 +55,20 @@ router.post('/add', function (request, response) {
             return false;
         }
         var reported_id = '';
+        var report_title = '';
+        var report_content = '';
         if (commentId === "0") {      // 게시글 신고
             reported_id = results[0].post_writer;
+            report_title = results[0].post_title;
+            report_content = results[0].post_content;
         }
         else {                       // 댓글 신고
             reported_id = results[0].comment_writer;
+            report_title = null;
+            report_content = results[0].comment_content;
         }
-        var sql = 'INSERT INTO report (board_id, post_id, comment_id, reported_id, reporter_id, report_content) VALUES (?, ?, ?, ?, ?, ?)';
-        conn.query(sql, [boardId, postId, commentId, reported_id, reporter_id, report_content], function (error2, results2) {
+        var sql = 'INSERT INTO report (board_id, post_id, comment_id, reported_id, reporter_id, report_reason, report_title, report_content) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+        conn.query(sql, [boardId, postId, commentId, reported_id, reporter_id, report_reason, report_title, report_content], function (error2, results2) {
             if (error2) {
                 console.log(error2);
                 throw error2;
@@ -108,7 +115,7 @@ router.get('/:boardId/:postId/:commentId', function (request, response) {     //
             <form method="POST" action="/report/add"><br>
             신고 하려는 댓글 : ${results[0].comment_content}<br>
             ${comment_writer}
-            신고 사유 : <textarea placeholder="신고 사유를 작성해 주세요." name="report_content" style="vertical-align:text-top; width:500px; height:200px;"></textarea>
+            신고 사유 : <textarea placeholder="신고 사유를 작성해 주세요." name="report_reason" style="vertical-align:text-top; width:500px; height:200px;"></textarea>
             <input type="hidden" name="boardId" value="${boardId}">
             <input type="hidden" name="postId" value="${postId}">
             <input type="hidden" name="commentId" value="${commentId}">
@@ -156,7 +163,7 @@ router.get('/:boardId/:postId', function (request, response) {        // 게시�
             <form method="POST" action="/report/add"><br>
             신고 하려는 게시글 : ${results[0].post_title}<br>
             ${post_writer}
-            신고 사유 : <textarea placeholder="신고 사유를 작성해 주세요." name="report_content" style="vertical-align:text-top; width:500px; height:200px;"></textarea>
+            신고 사유 : <textarea placeholder="신고 사유를 작성해 주세요." name="report_reason" style="vertical-align:text-top; width:500px; height:200px;"></textarea>
             <input type="hidden" name="boardId" value="${boardId}">
             <input type="hidden" name="postId" value="${postId}">
             <input type="hidden" name="commentId" value="0">

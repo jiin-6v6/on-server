@@ -107,12 +107,12 @@ router.post('/reply/:boardId/:postId/:commentId', function (request, response) {
                 console.log('something wrong');
                 response.redirect('/');
             }
-            if(results4[0].isDelete === 1){     // 부모댓글이 삭제된 경우 알람을 주지 않는다.
+            if (results4[0].isDelete === 1) {     // 부모댓글이 삭제된 경우 알람을 주지 않는다.
                 return false;
             }
             var alarmed_id = results4[0].comment_writer;
 
-            if(alarmed_id === alarming_id){     // 알람 받는 대상 = 알람 주는 대상
+            if (alarmed_id === alarming_id) {     // 알람 받는 대상 = 알람 주는 대상
                 return false;
             }
 
@@ -136,8 +136,8 @@ router.post('/reply/:boardId/:postId/:commentId', function (request, response) {
                     response.redirect('/');
                     return false;
                 }
-                
-                if(alarmed_id === results2[0].post_writer){     // 대댓글에 의한 알람을 받는 2명이 동일인물인 경우
+
+                if (alarmed_id === results2[0].post_writer) {     // 대댓글에 의한 알람을 받는 2명이 동일인물인 경우
                     return false;
                 }
 
@@ -252,7 +252,7 @@ router.post('/:boardId/:postId', function (request, response) {
             }
             var alarmed_id = results2[0].post_writer;
 
-            if(alarmed_id === alarming_id){     // 알람 받는 대상 = 알람 주는 대상
+            if (alarmed_id === alarming_id) {     // 알람 받는 대상 = 알람 주는 대상
                 return false;
             }
 
@@ -397,7 +397,12 @@ router.get('/delete/:boardId/:postId/:commentId', function (request, response) {
             response.redirect('/board/' + boardId + '/0/' + postId);
             return false
         }
-        if (request.user.isAdmin) { // admin mode
+        if ((request.user.id !== results[0].comment_writer) && !request.user.isAdmin) {    // 작성자도 아니고 관리자도 아닌 경우
+            console.log('something wrong');
+            response.redirect('/');
+            return false;
+        }
+        if (request.user.isAdmin && results[0].isDelete !== 2) { // admin mode
             var sql = 'UPDATE user_info SET report_cnt = report_cnt + 1 WHERE id=?';
             conn.query(sql, [results[0].comment_writer], function (error2, results2) {
                 if (error2) {
@@ -418,17 +423,30 @@ router.get('/delete/:boardId/:postId/:commentId', function (request, response) {
                     // 지인아 여기는 뭘까?
                 }
             });
+            var sql = 'UPDATE comment SET isDelete=2 WHERE id=?';
+            conn.query(sql, [commentId], function (error4, results4) {
+                if (error4) {
+                    console.log(error4);
+                    throw error4;
+                }
+            });
         }
-        if ((request.user.id !== results[0].comment_writer) && !request.user.isAdmin) {    // 작성자도 아니고 관리자도 아닌 경우
-            console.log('something wrong');
-            response.redirect('/');
-            return false;
+        else {   // user mode
+            var sql = 'UPDATE comment SET isDelete=1 WHERE id=?';
+            conn.query(sql, [commentId], function (error4, results4) {
+                if (error4) {
+                    console.log(error4);
+                    throw error4;
+                }
+            });
         }
-        var sql = 'UPDATE comment SET isDelete=1 WHERE id=?';
-        conn.query(sql, [commentId], function (error4, results4) {
-            if (error4) {
-                console.log(error4);
-                throw error4;
+
+        // alarm DB 수정
+        var sql = 'UPDATE alarm SET isCheck=1 WHERE comment_id=?';
+        conn.query(sql, [commentId], function (error5, results5) {
+            if (error5) {
+                console.log(error5);
+                throw error5;
             }
             else {
                 if (request.user.isAdmin) {   // report page number 어떻게 처리할 것인가..

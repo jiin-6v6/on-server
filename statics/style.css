@@ -30,7 +30,6 @@ nav {
 }
 
 footer {
-    clear: both;
     border-top: 1px solid #bcbcbc;
 }
 
@@ -99,9 +98,14 @@ a:hover {
 #post_title{
     width: 600px;
 }
-#post_content{
+#board_post_content{
     text-align: left;
     width: 700px;
+    height: 200px;
+}
+#post_content_update{
+    text-align: left;
+    width:700px;
     height: 200px;
 }
 

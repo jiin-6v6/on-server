@@ -1,9 +1,36 @@
 var express = require('express');
 var router = express.Router();
+var mysql = require('mysql');
 var template = require('../lib/template.js');
 var auth = require('../lib/auth.js');
 
+// mysql connection
+var conn = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: 'mintchoco',
+    database: 'community',
+    dateStrings: 'date'
+});
+conn.connect();
+
 router.get('/', function (request, response) {
+    var select_sql = 'SELECT * FROM sessions';
+    var delete_sql = 'DELETE FROM sessions WHERE session_id=?'
+    conn.query(select_sql, function (error, results) {
+        if (error) {
+            throw error;
+        }
+        for (var i = 0; i < results.length; i++) {
+            if (new Date(JSON.parse(results[i].data).cookie.expires).getTime() < Date.now()) {
+                conn.query(delete_sql, [results[i].session_id], function (error2, results2) {
+                    if (error2) {
+                        throw error2;
+                    }
+                });
+            }
+        }
+    });
     var title = ``;
     if (!auth.isLogin(request, response)) {
         nav = `<nav>

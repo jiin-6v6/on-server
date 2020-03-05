@@ -68,6 +68,80 @@ router.get('/:report_page', function (request, response) {
     });
 });
 
+router.get('/:report_page/:report_id', function (request, response) {
+    if (!auth.isLogin(request, response)) {
+        response.redirect('/');
+        return false;
+    }
+    if (!request.user.isAdmin) {
+        response.redirect('/');
+        return false;
+    }
+
+    var report_page = Number(sanitizeHtml(request.params.report_page));
+    var report_id = Number(sanitizeHtml(request.params.report_id));
+
+    var title = '';
+    var nav = `<nav>
+    <h2>관리자</h2>
+    <p id="side-list"><a href="/admin/1">신고</a></p>
+    <p id="side-list"><a href="/admin/report_cnt/1">회원 신고 누적횟수</a></p>
+    </nav>`;
+    var login = auth.statusUI(request, response);
+
+    var sql = 'SELECT * FROM report WHERE report_id=?'
+    conn.query(sql, [report_id], function (error0, results0) {
+        if (error0) {
+            throw error0;
+        }
+
+        var boardId = results0[0].board_id;
+        var postId = results0[0].post_id;
+        var commentId = results0[0].comment_id;
+        //var report_title = results0[0].report_title;
+        var report_content = results0[0].report_content;
+
+        if (boardId != 'notice' && boardId != 'free' && boardId != 'anonymous') {
+            wrongPath = true;
+            response.redirect('/');
+            return false;
+        }
+
+        var sql = 'SELECT * FROM post WHERE board_id=? AND id=?'
+        conn.query(sql, [boardId, postId], function (error, results) {
+            if (error) {
+                throw error;
+            }
+            /*if (!results[0]) {
+                wrongPath = true;
+                response.redirect('/board/' + boardId);
+                return false;
+            }*/
+            var content = template.report_look_post(request, results, results0);
+            var sql = 'SELECT * FROM comment WHERE post_id=? AND parent_id=0 ORDER BY id DESC';
+            conn.query(sql, [postId], function (error2, results2) {
+                if (error2) {
+                    console.log(error2);
+                    throw error2;
+                }
+                var sql = 'SELECT * FROM comment WHERE post_id=? AND parent_id>0 ORDER BY id DESC';
+                conn.query(sql, [postId], function (error3, results3) {
+                    if (error3) {
+                        console.log(error3);
+                        throw error3;
+                    }
+                    var arr = results2.concat(results3);
+                    content += template.comment_admin(request, arr, boardId, postId, commentId, report_content);
+
+                    var html = template.basic(title, login, nav, content);
+                    response.send(html);
+                });
+
+            });
+        });
+    });
+});
+
 router.post('/reject', function (request, response) {
     if (!auth.isLogin(request, response)) {
         response.redirect('/');
@@ -144,10 +218,6 @@ router.get('/report_cnt/:report_cnt_page', function (request, response) {
         }
     });
 });
-
-// router.get('/report_cnt/:report_cnt_page', function (request, response) {
-
-// });
 
 router.post('/out', function (request, response) {
     if (!auth.isLogin(request, response)) {

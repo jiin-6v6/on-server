@@ -67,13 +67,90 @@ router.post('/update', function (request, response) {
     response.send(html);
 });
 
-router.post('/update_process', function (request, response) {
-    var post = request.body;
+router.post('/updatePwd', function (request, response) {
+    if (!auth.isLogin(request, response)) {
+        response.redirect('/');
+        return false;
+    }
+
+    // var post = request.body;
+    var login = auth.statusUI(request, response);
+    var title = ``;
+    var nav = `<nav>
+        <h2>정보 관리</h2>
+        <p id="side-list"><a href="/my_info">내 정보</a></p>
+        <p id="side-list"><a href="/my_info/alarm/1">알림</a></p>
+        <p id="side-list"><a href="/my_info/mypost/1">내가 쓴 글</a></p>
+        <p id="side-list"><a href="/my_info/mycomment/1">내가 쓴 댓글</a></p>
+        </nav>`;
+    var content = template.updatePwd();
+    var html = template.basic(title, login, nav, content);
+    response.send(html);
+});
+
+router.post('/checkPwd', urlencodedParser, function (request, response) {
+    var checkingPwd = request.body.pwd;
     var salt = '';
     var hashingPwd = '';
+    var select_sql = 'SELECT * FROM user_info WHERE id=?';
+
+    conn.query(select_sql, [request.user.id], function (error, results) {
+        if (error) {
+            throw error;
+        }
+        salt = results[0].salt;
+
+        // hashing
+        crypto.pbkdf2(checkingPwd, salt, 112311, 64, 'sha512', (err, derivedKey) => {
+            if (err) throw err;
+            hashingPwd = derivedKey.toString('hex');
+            if (results[0].pwd === hashingPwd) response.send({ msg: 'OK', value: true });
+            else response.send({ msg: '비밀번호를 확인해주세요.', value: false });
+        });
+    });
+});
+
+router.post('/update_process', function (request, response) { // id변경시 session 삭제해야됨
+    var post = request.body;
+    var salt = '';
+    // var hashingPwd = '';
+
+    // var selectSalt_sql = 'SELECT salt FROM user_info WHERE id=?';
+    var update_sql = 'UPDATE user_info SET id=?, birth=?, email=? WHERE id=?';
+    // var deleteSession_sql = 'DELETE FROM SESSIONS WHERE session_id=?';
+
+    // update
+    conn.query(update_sql, [post.auth_id, post.auth_birth, post.auth_email, request.user.id], function (error2, data2) {
+        if (error2) throw error2;
+        if (post.auth_id === request.user.id) response.redirect('/my_info');
+        else response.redirect('/auth/login');
+        // 아이디 변경시 세션 수정해야됨 근데 sql 세션id값이랑 web 세션id값이랑 다름
+    })
+
+    // // salt 값 탐색
+    // conn.query(selectSalt_sql, [request.user.id], function (error1, data1) {
+    //     if (error1) throw error1;
+    //     salt = data1[0].salt;
+
+    //     // password hashing
+    //     crypto.pbkdf2(post.auth_pwd, salt, 112311, 64, 'sha512', (err, derivedKey) => {
+    //         if (err) throw err;
+    //         hashingPwd = derivedKey.toString('hex');
+
+    //     }
+    //     )
+    // });
+});
+
+router.post('/updatePwd_process', function (request, response) {
+    var salt = '';
+    var hashingPwd = '';
+    var sessionID = request.sessionID;
+    // var findSessionId = /(?<=.{4}).+(?=[\.])/;
 
     var selectSalt_sql = 'SELECT salt FROM user_info WHERE id=?';
-    var update_sql = 'UPDATE user_info SET id=?, pwd=?, birth=?, email=? WHERE id=?';
+    var update_sql = 'UPDATE user_info SET pwd=? WHERE id=?';
+    var deleteSession_sql = 'DELETE FROM SESSIONS WHERE session_id=?';
 
     // salt 값 탐색
     conn.query(selectSalt_sql, [request.user.id], function (error1, data1) {
@@ -81,15 +158,19 @@ router.post('/update_process', function (request, response) {
         salt = data1[0].salt;
 
         // password hashing
-        crypto.pbkdf2(post.auth_pwd, salt, 112311, 64, 'sha512', (err, derivedKey) => {
+        crypto.pbkdf2(request.body.new_pwd1, salt, 112311, 64, 'sha512', (err, derivedKey) => {
             if (err) throw err;
             hashingPwd = derivedKey.toString('hex');
 
-            // update
-            conn.query(update_sql, [post.auth_id, hashingPwd, post.auth_birth, post.auth_email, request.user.id], function (error2, data2) {
+            // password update
+            conn.query(update_sql, [hashingPwd, request.user.id], function (error2, data2) {
                 if (error2) throw error2;
-                response.redirect('/my_info');
-                // 아이디 변경시 세션 수정해야됨 근데 sql 세션id값이랑 web 세션id값이랑 다름
+
+                // session 삭제
+                conn.query(deleteSession_sql, [sessionID], function (error3, data3) {
+                    if (error3) throw error3;
+                    response.redirect('/auth/login');
+                })
             })
         }
         )
@@ -175,7 +256,7 @@ router.get('/mypost/:this_page', function (request, response) {
     var this_page = sanitizeHtml(request.params.this_page);
     this_page = Number(this_page);
     var post_writer = request.user.id;
-    var sql = 'SELECT * FROM post WHERE post_writer=?';
+    var sql = 'SELECT * FROM post WHERE post_writer=? AND isDelete=0';
     var login = auth.statusUI(request, response);
     conn.query(sql, [post_writer], function (error, results) {
         if (error) {
@@ -219,7 +300,7 @@ router.get('/mycomment/:this_page', function (request, response) {
     var this_page = sanitizeHtml(request.params.this_page);
     this_page = Number(this_page);
     var comment_writer = request.user.id;
-    var sql = 'SELECT * FROM comment WHERE comment_writer=?';
+    var sql = 'SELECT * FROM comment WHERE comment_writer=? AND isDelete=0';
     var login = auth.statusUI(request, response);
     conn.query(sql, [comment_writer], function (error, results) {
         if (error) {
@@ -282,18 +363,45 @@ router.post('/register_process', function (request, response) {
 
 });
 
-router.post('/checkId', urlencodedParser, function (request, response) {
+router.post('/checkId', urlencodedParser, function (request, response) { // 회원가입때랑 정보수정때 사용
     var checkingId = request.body.id;
     var success_sql = 'SELECT EXISTS(SELECT * FROM user_info WHERE id =?) AS SUCCESS';
     conn.query(success_sql, [checkingId], function (error, results) {
         if (error) {
             throw error;
         }
-        if (results[0].SUCCESS) {
-            response.send({ msg: '이미 사용중인 아이디입니다.', value: false });
+        // console.log(request.session.passport.user);
+        // console.log(results[0].SUCCESS); // 있으면 1 없으면 0 return
+
+        if (request.session.passport.user && request.session.passport.user === checkingId) { // 로그인 되어있는 경우 and 아이디가 같은 경우
+            response.send({ msg: '현재 아이디입니다.', value: true, isIdChange: true });
+        } else if (results[0].SUCCESS) {
+            response.send({ msg: '이미 사용중인 아이디입니다.', value: false, isIdChange: false });
         } else {
-            response.send({ msg: '사용 가능한 아이디입니다.', value: true });
+            response.send({ msg: '사용 가능한 아이디입니다.', value: true, isIdChange: false });
         }
     });
+});
+
+// 비밀번호 재입력 아마 사용 안할 듯
+router.post('/pwd_auth', function (request, response) {
+    if (!auth.isLogin(request, response)) {
+        response.redirect('/');
+        return false;
+    }
+
+    var post = request.body;
+    var login = auth.statusUI(request, response);
+    var title = ``;
+    var nav = `<nav>
+        <h2>정보 관리</h2>
+        <p id="side-list"><a href="/my_info">내 정보</a></p>
+        <p id="side-list"><a href="/my_info/alarm/1">알림</a></p>
+        <p id="side-list"><a href="/my_info/mypost/1">내가 쓴 글</a></p>
+        <p id="side-list"><a href="/my_info/mycomment/1">내가 쓴 댓글</a></p>
+        </nav>`;
+    var content = template.pwd_auth(post);
+    var html = template.basic(title, login, nav, content);
+    response.send(html);
 });
 module.exports = router;

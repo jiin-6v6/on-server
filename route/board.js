@@ -90,7 +90,10 @@ router.get('/:boardId/:this_page', function (request, response) {
     var boardId = sanitizeHtml(request.params.boardId);
     var this_page = sanitizeHtml(request.params.this_page);
     this_page = Number(this_page);
-    var sql = 'SELECT * FROM post WHERE board_id=?';
+    var sql = 'SELECT * FROM post WHERE board_id=? AND isDelete=0';
+    if (request.user.isAdmin) {
+        sql = 'SELECT * FROM post WHERE board_id=?';
+    }
     if (boardId != 'notice' && boardId != 'free' && boardId != 'anonymous') {
         wrongPath = true;
         response.redirect('/');
@@ -173,10 +176,9 @@ router.get('/:boardId/0/:postId', function (request, response) {
     }
 
     var commentId = 0;
-    if(request.query !== {}){
+    if (request.query.commentId) {
         commentId = request.query.commentId;
     }
-
 
     var title = '';
     var nav = `<nav>
@@ -199,12 +201,6 @@ router.get('/:boardId/0/:postId', function (request, response) {
             return false;
         }
 
-        if (results[0].isDelete === 1){
-            console.log('something wrong');
-            response.redirect('/board/' + boardId + '/1');
-            return false;
-        }
-
         var content = template.look_post(request, results);
 
         var sql = 'SELECT * FROM comment WHERE post_id=? AND parent_id=0 ORDER BY id DESC';
@@ -220,7 +216,13 @@ router.get('/:boardId/0/:postId', function (request, response) {
                     throw error3;
                 }
                 var arr = results2.concat(results3);
-                content += template.comment_list_update(request, arr, boardId, postId, commentId, true);
+                if (request.user.isAdmin) {       // admin mode
+                    content += template.comment_admin(request, arr, boardId, postId, false, false);
+                }
+                else {       // user mode
+                    content += template.comment_list_update(request, arr, boardId, postId, commentId, true);
+                }
+
 
                 var html = template.basic(title, login, nav, content);
                 response.send(html);
@@ -349,7 +351,14 @@ router.post('/delete/:boardId/:postId', function (request, response) {
             response.redirect('/board/' + boardId + '/0/' + postId);
             return false
         }
-        if (request.user.isAdmin) { // admin mode
+        if ((request.user.id !== results[0].post_writer) && !request.user.isAdmin) {    // 작성자도 아니고 관리자도 아닌 경우
+            if (!request.user.isAdmin) {
+                console.log('something wrong');
+                response.redirect('/');
+                return false;
+            }
+        }
+        if (request.user.isAdmin && (results[0].isDelete !== 2)) { // admin mode
             var sql = 'UPDATE user_info SET report_cnt = report_cnt + 1 WHERE id=?';
             conn.query(sql, [results[0].post_writer], function (error2, results2) {
                 if (error2) {
@@ -370,19 +379,30 @@ router.post('/delete/:boardId/:postId', function (request, response) {
                     // ???
                 }
             });
+            var sql = 'UPDATE post SET isDelete=2 WHERE id=?';
+            conn.query(sql, [postId], function (error4, results4) {
+                if (error4) {
+                    console.log(error4);
+                    throw error4;
+                }
+            });
         }
-        if ((request.user.id !== results[0].post_writer) && !request.user.isAdmin) {    // 작성자도 아니고 관리자도 아닌 경우
-            if (!request.user.isAdmin) {
-                console.log('something wrong');
-                response.redirect('/');
-                return false;
-            }
+        else {       // user mode
+            var sql = 'UPDATE post SET isDelete=1 WHERE id=?';
+            conn.query(sql, [postId], function (error4, results4) {
+                if (error4) {
+                    console.log(error4);
+                    throw error4;
+                }
+            });
         }
-        var sql = 'UPDATE post SET isDelete=1 WHERE id=?';
-        conn.query(sql, [postId], function (error4, results4) {
-            if (error4) {
-                console.log(error4);
-                throw error4;
+
+        // alarm DB 수정
+        var sql = 'UPDATE alarm SET isCheck=1 where post_id=?';
+        conn.query(sql, [postId], function (error5, rsults5) {
+            if (error5) {
+                console.log(error5);
+                throw error5;
             }
             else {
                 if (request.user.isAdmin) {   // report page number 어떻게 처리할 것인가..
