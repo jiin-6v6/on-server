@@ -103,7 +103,7 @@ a:hover {
     width: 700px;
     height: 200px;
 }
-#post_content_update{
+#post_content_update, #post_content_write{
     text-align: left;
     width:700px;
     height: 200px;

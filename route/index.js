@@ -49,6 +49,9 @@ router.get('/', function (request, response) {
         </nav>`;
     }
     var content = `<div id="content"><img src="/icebear.png" width=500px></div>`;
+    if (request.cookies.once_logined == false) {
+        content += `<script type="text/javascript">alert("세션이 만료되어 다시 로그인 해주세요");</script>`
+    }
     var login = auth.statusUI(request, response);
     html = template.basic(title, login, nav, content);
     response.send(html);

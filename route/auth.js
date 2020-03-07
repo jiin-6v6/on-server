@@ -1,5 +1,7 @@
 var express = require('express');
 var router = express.Router();
+var nodemailer = require('nodemailer'); //이메일 발송에 필요함 install필요
+var smtpTransport = require('nodemailer-smtp-transport'); //이메일 발송에 필요함 install필요
 var passport = require('passport');
 var crypto = require('crypto');
 var session = require('express-session');
@@ -28,8 +30,8 @@ module.exports = function (passport) {
             if (error) {
                 throw error;
             }
-            for (var i = 0; i < results.length; i++){
-                if (new Date(JSON.parse(results[i].data).cookie.expires).getTime() < Date.now()){
+            for (var i = 0; i < results.length; i++) {
+                if (new Date(JSON.parse(results[i].data).cookie.expires).getTime() < Date.now()) {
                     conn.query(delete_sql, [results[i].session_id], function (error2, results2) {
                         if (error2) {
                             throw error2;
@@ -85,17 +87,19 @@ module.exports = function (passport) {
 
     router.post('/login_process',
         passport.authenticate('local', {
-            successRedirect: '/',
             failureRedirect: '/auth/login',
             failureFlash: true
-        })
-    );
-
-    router.get('/logout', function (request, response) {
-        request.session.save(function () {  // 데이터 저장이 끝났을때 호출됨 안전하게 redirect하기 위함
+        }), function (request, response) {
+            response.cookie('once_logined', true);
             response.redirect('/');
         });
+
+    router.get('/logout', function (request, response) {
+        // request.session.save(function () {  // 데이터 저장이 끝났을때 호출됨 안전하게 redirect하기 위함
+        //     response.redirect('/');
+        // });
         request.session.destroy();
+        response.redirect('/');
     });
 
     router.get('/register', function (request, response) {
@@ -137,7 +141,7 @@ module.exports = function (passport) {
                 <div style="margin:0; padding: 0;">
                     <li style="position:relative;">
                     <input class="input_box" type="text" id="auth_email" name="auth_email" placeholder="이메일" onblur="check_email();">
-                    <button formaction="eamil_send" class="btn regist_btn_a" style="font-size: 12px; padding:0;">인증번호보내기</button>
+                    <button formaction="/auth/email_send" class="btn regist_btn_a" style="font-size: 12px; padding:0;">인증번호보내기</button>
                     <article id="emailMsg"></article>
                     </li>
                 </div>
@@ -147,7 +151,7 @@ module.exports = function (passport) {
                     <button href="#" class="btn regist_btn_a">확인</button>
                     </li>
                 </div>
-                <button type="submit" formaction="../my_info/register_process" class="btn regist_btn_a" style="width:100%; position:static; margin-top: 30px;" onclick="return regist_check();">회원가입</button>
+                <button type="submit" formaction="/my_info/register_process" class="btn regist_btn_a" style="width:100%; position:static; margin-top: 30px;" onclick="return regist_check();">회원가입</button>
             </ul>
         </form>
         <hr>
@@ -174,7 +178,7 @@ module.exports = function (passport) {
                     return false;
                 } else{
                     var data = { id: checkingId };
-                    fetch('../my_info/checkId',{
+                    fetch('/my_info/checkId',{
                         headers: { 'Content-Type': 'application/json' },
                         method:'POST', body:JSON.stringify(data)})
                         .then(res => res.json())
@@ -339,7 +343,7 @@ module.exports = function (passport) {
                 </label>
                 <br>
                 <label name="id">
-                    <p>비밀번호 : <input type="text" placeholder="아이디를 입력하세요." name="id" style="float: center;"></p>
+                    <p>아이디 : <input type="text" placeholder="아이디를 입력하세요." name="id" style="float: center;"></p>
                 </label>
                 <br>
                 <button type="submit" class="btn" id="btn_find_pwd" style="float: right;">비밀번호 찾기</button>
@@ -359,19 +363,41 @@ module.exports = function (passport) {
         var name = post.name;
         var email = post.email;
 
-        var sql = 'SELECT id FROM user_info WHERE name=? AND email=?'
+        var sql = 'SELECT id FROM user_info WHERE name=? AND email=?';
         conn.query(sql, [name, email], function (error, results) {
             if (error) {
                 throw error;
             }
             if (results[0]) {
-                response.send(results[0]);
-                // 아이디를 어떻게 알려줄 것인가?
-                // alert 관련?
+                var transporter = nodemailer.createTransport(smtpTransport({
+                    service: 'gmail',
+                    host: 'smtp.gmail.com',
+                    auth: {
+                        user: 'agesum100@gmail.com',
+                        pass: 'kjkj9597!'
+                    } //이메일 보내는 사람 계정
+                }));
+
+                var mailOptions = {
+                    from: 'agesum100@gmail.com', //보내는 사람
+                    to: email, //받는 사람
+                    subject: '다미부기 아이디입니다.', //이메일 제목
+                    text: '아이디: ' + results[0].id //내용, html도 쓸수 있음(html: )
+                };
+
+                //이메일 보내기
+                transporter.sendMail(mailOptions, function (error, info) {
+                    if (error) {
+                        console.log(error);
+                        response.send('<script type="text/javascript">alert("이메일 전송이 실패했습니다."); location.href="/auth/find_info";</script>');
+                    } else {
+                        //console.log('Email sent: ' + info.response); //잘보내졌나 확인
+                        response.send('<script type="text/javascript">alert("이메일이 전송되었습니다."); location.href="/auth/find_info";</script>');
+                    }
+                });
             }
             else {
-                response.send('no result');
-                // alert와 관련된 부분
+                response.send('<script type="text/javascript">alert("회원이 존재하지 않습니다."); location.href="/auth/find_info";</script>');
             }
         });
     });
@@ -392,19 +418,61 @@ module.exports = function (passport) {
                 throw error;
             }
             if (results[0]) {
-                response.send(results[0]);
-                // 비밀번호를 어떻게 알려줄 것인가?
-                // 비밀번호 hashing하면 원래 비밀번호를 알려줄수가 없는데
-                // 임시로 비밀번호를 재발급할 것인가?
-                // 이러면 또 정보수정이랑도 연관이 되어버림 (비밀번호 수정)
-                // alert 관련?
+                var temp_pwd = '';
+                for(var i=0; i<8; i++){
+                    temp_pwd += Math.floor(Math.random()*10);
+                }
+                var salt = '';
+                var hashingPwd = '';
+                crypto.randomBytes(64, (err, buf) => {
+                    if (err) throw err;
+                    salt = buf.toString('hex');
+
+                    // hashing
+                    crypto.pbkdf2(temp_pwd, salt, 112311, 64, 'sha512', (err, derivedKey) => {
+                        if (err) throw err;
+                        hashingPwd = derivedKey.toString('hex');
+
+                        // sql insert
+                        var sql = 'UPDATE user_info SET salt=?, pwd=? WHERE id=? AND name=? AND email=?';
+                        conn.query(sql, [salt, hashingPwd, id, name, email], function (error2, results2) {
+                            if (error2) {
+                                throw error2;
+                            }
+                        });
+                    });
+                });
+                var transporter = nodemailer.createTransport(smtpTransport({
+                    service: 'gmail',
+                    host: 'smtp.gmail.com',
+                    auth: {
+                      user: 'agesum100@gmail.com',
+                      pass: 'kjkj9597!'
+                    } //이메일 보내는 사람 계정
+                }));
+                   
+                var mailOptions = {
+                    from: 'agesum100@gmail.com', //보내는 사람
+                    to: email, //받는 사람
+                    subject: '다미부기 임시 비밀번호입니다.', //이메일 제목
+                    text: '임시 비밀번호: '+temp_pwd //내용, html도 쓸수 있음(html: )
+                };
+                   
+                //이메일 보내기
+                transporter.sendMail(mailOptions, function(error, info){
+                    if (error) {
+                      console.log(error);
+                      response.send('<script type="text/javascript">alert("이메일 전송이 실패했습니다."); location.href="/auth/find_info";</script>');
+                    } else {
+                    //   console.log('Email sent: ' + info.response); //잘보내졌나 확인
+                      response.send('<script type="text/javascript">alert("이메일이 전송되었습니다."); location.href="/auth/find_info";</script>');
+                    }
+                });
             }
             else {
-                response.send('no result');
-                // alert와 관련된 부분
+                response.send('<script type="text/javascript">alert("회원이 존재하지 않습니다."); location.href="/auth/find_info";</script>');
             }
         });
-        response.send(name + email + pwd);
     });
     return router;
 }

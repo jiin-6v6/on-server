@@ -359,8 +359,7 @@ router.post('/register_process', function (request, response) {
                 response.redirect('/auth/login');
             })
         });
-    })
-
+    });
 });
 
 router.post('/checkId', urlencodedParser, function (request, response) { // 회원가입때랑 정보수정때 사용
@@ -370,10 +369,8 @@ router.post('/checkId', urlencodedParser, function (request, response) { // 회�
         if (error) {
             throw error;
         }
-        // console.log(request.session.passport.user);
-        // console.log(results[0].SUCCESS); // 있으면 1 없으면 0 return
 
-        if (request.session.passport.user && request.session.passport.user === checkingId) { // 로그인 되어있는 경우 and 아이디가 같은 경우
+        if (request.session.passport && request.session.passport.user === checkingId) { // 로그인 되어있는 경우 and 아이디가 같은 경우
             response.send({ msg: '현재 아이디입니다.', value: true, isIdChange: true });
         } else if (results[0].SUCCESS) {
             response.send({ msg: '이미 사용중인 아이디입니다.', value: false, isIdChange: false });

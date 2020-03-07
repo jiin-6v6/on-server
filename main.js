@@ -3,21 +3,30 @@ var app = express();
 
 app.use(express.static('statics')); // for window10, it should be on top
 
-var fs = require('fs');
 var flash = require('connect-flash');
-var path = require('path');
+var fs = require('fs');
 var qs = require('querystring');
 var bodyParser = require('body-parser');
+var cookieParser = require('cookie-parser');
 var compression = require('compression');
-var mysql = require('mysql');
 var session = require('express-session');
 var MySQLStore = require('express-mysql-session')(session);
-var template = require('./lib/template.js');
-
-var wrongPath = false;
+var http = require('http');
+var https = require('https');
+/*var options = {
+    key: fs.readFileSync(),
+    cert: fs.readFileSync()
+};*/
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(compression());
+app.use(cookieParser());
+app.use(function (req, res, next) {
+    if (Object.keys(req.cookies).length === 1 && req.cookies.once_logined){ // alert 세션 만료 띄우는 플래그 설정
+        req.cookies.once_logined = false;
+    }
+    next();
+});
 app.use(session({
     secret: 'asadlfkj!@#!@#dfgasdg',
     resave: false,
@@ -30,16 +39,24 @@ app.use(session({
         database: 'community'
     })
 }));
+app.use(function (req, res, next) {
+    if (req.session.passport && req.cookies.once_logined === undefined){ // 브라우저 껐다 다시 킬 때 로그아웃하게 만듦
+        req.session.destroy();
+        res.redirect('/');
+    }
+    else
+        next();
+});
 app.use(flash());   // Since it uses session, please write after app.use(session)
 var passport = require('./lib/passport.js')(app);   // it should be located after app.use(flash())
 
 //app.get('/', (req, res) => res.send('Hello World!'))
-app.get('*', function (request, response, next) {
-    fs.readdir('./data', function (error, filelist) {
-        request.list = filelist;
-        next();
-    });
-});
+// app.get('*', function (request, response, next) {
+//     fs.readdir('./data', function (error, filelist) {
+//         request.list = filelist;
+//         next();
+//     });
+// });
 
 //route, routing
 var indexRouter = require('./route/index');
@@ -67,6 +84,7 @@ app.use(function (err, req, res, next) {
     res.status(500).send('Something broke!');
 });
 
-app.listen(3000, function () {
-    console.log('Example app listening on port 3000!');
+http.createServer(app).listen(80, function(){
+    console.log('Example app listening on port 80!')
 });
+https.createServer(app).listen(443);
