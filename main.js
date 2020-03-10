@@ -84,7 +84,13 @@ app.use(function (err, req, res, next) {
     res.status(500).send('Something broke!');
 });
 
+// app.listen(3000, function(){
+//     console.log('Example app listening on port 3000!');
+// })
+
 http.createServer(app).listen(80, function(){
     console.log('Example app listening on port 80!')
 });
 https.createServer(app).listen(443);
+
+

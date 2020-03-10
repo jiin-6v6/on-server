@@ -91,6 +91,7 @@ router.post('/reply/:boardId/:postId/:commentId', function (request, response) {
         if (!results[0]) {
             console.log('something wrong');
             response.redirect('/');
+            return false;
         }
         var alarming_id = comment_writer;
         var unknown = results[0].unknown;
@@ -160,6 +161,8 @@ router.post('/reply/:boardId/:postId/:commentId', function (request, response) {
     response.redirect('/board/' + boardId + '/0/' + postId);
 });
 
+
+
 router.post('/:boardId/:postId', function (request, response) {
     if (!auth.isLogin(request, response)) {
         response.redirect('/');
@@ -172,7 +175,7 @@ router.post('/:boardId/:postId', function (request, response) {
     var comment_writer = post.comment_writer;
     var comment_content = post.comment_content;
 
-    if (request.user.id !== comment_writer) {
+    if (request.user.id !== comment_writer) {       // 작성자와 실제 로그인된 아이디가 다른 경우
         response.redirect('/');
         return false;
     }
@@ -185,87 +188,175 @@ router.post('/:boardId/:postId', function (request, response) {
                 throw error;
             }
             if (!results[0]) {    // 한 번도 댓글을 단 적이 없을 때
-                var sql = 'SELECT MAX(unknown) AS max FROM comment';
-                conn.query(sql, function (error2, results2) {
+                var sql2 = 'SELECT MAX(unknown) AS max FROM comment WHERE post_id=?';
+                conn.query(sql2, [postId], function (error2, results2) {
                     if (error2) {
                         console.log(error2);
                         throw error2;
                     }
                     var unknown = (results2[0].max ? results2[0].max : 0) + 1;
-                    var sql = 'INSERT INTO comment (board_id, post_id, comment_writer, comment_content, unknown) VALUES (?, ?, ?, ?, ?)';
-                    conn.query(sql, [boardId, postId, comment_writer, comment_content, unknown], function (error3, results3) {
+                    var sql3 = 'INSERT INTO comment (board_id, post_id, comment_writer, comment_content, unknown) VALUES (?, ?, ?, ?, ?)';
+                    conn.query(sql3, [boardId, postId, comment_writer, comment_content, unknown], function (error3, results3) {
                         if (error3) {
                             console.log(error3);
                             throw error3;
                         }
+                        var sql5 = 'SELECT id, unknown FROM comment WHERE board_id=? AND post_id=? AND comment_writer=? AND comment_content=? AND parent_id=0 ORDER BY id DESC';
+                        conn.query(sql5, [boardId, postId, comment_writer, comment_content], function (error5, results5) {
+                            if (error5) {
+                                console.log(error5);
+                                throw error5;
+                            }
+                            console.log(results5);
+                            if (!results5[0]) {
+                                console.log('something wrong1');
+                                response.redirect('/');
+                                return false;
+                            }
+                            var alarming_id = comment_writer;
+                            var unknown = results5[0].unknown;
+                            var comment_id = results5[0].id;
+
+                            // 게시글에 대한 알람
+                            var sql6 = 'SELECT post_writer FROM post WHERE id=?';
+                            conn.query(sql6, [postId], function (error6, results6) {
+                                if (error6) {
+                                    console.log(error6);
+                                    throw error6;
+                                }
+
+                                if (!results6[0]) {
+                                    console.log('something wrong2');
+                                    response.redirect('/');
+                                    return false;
+                                }
+                                var alarmed_id = results6[0].post_writer;
+
+                                if (alarmed_id !== alarming_id) {     // 알람 받는 대상 != 알람 주는 대상
+                                    var sql7 = 'INSERT INTO alarm (comment_id, alarmed_id, alarming_id, post_id, board_id, parent_id, unknown) VALUES (?, ?, ?, ?, ?, ?, ?)';
+                                    conn.query(sql7, [comment_id, alarmed_id, alarming_id, postId, boardId, 0, unknown], function (error7, results7) {
+                                        if (error7) {
+                                            console.log(error7);
+                                            throw error7;
+                                        }
+                                    });
+                                }
+                                response.redirect('/board/' + boardId + '/0/' + postId);
+                            });
+                        });
                     });
                 });
             }
             else {  // 이미 익명번호를 부여 받은 경우
                 var unknown = results[0].unknown;
-                var sql = 'INSERT INTO comment (board_id, post_id, comment_writer, comment_content, unknown) VALUES (?, ?, ?, ?, ?)';
-                conn.query(sql, [boardId, postId, comment_writer, comment_content, unknown], function (error3, results3) {
+                var sql3 = 'INSERT INTO comment (board_id, post_id, comment_writer, comment_content, unknown) VALUES (?, ?, ?, ?, ?)';
+                conn.query(sql3, [boardId, postId, comment_writer, comment_content, unknown], function (error3, results3) {
                     if (error3) {
                         console.log(error3);
                         throw error3;
                     }
+                    var sql5 = 'SELECT id, unknown FROM comment WHERE board_id=? AND post_id=? AND comment_writer=? AND comment_content=? AND parent_id=0 ORDER BY id DESC';
+                    conn.query(sql5, [boardId, postId, comment_writer, comment_content], function (error5, results5) {
+                        if (error5) {
+                            console.log(error5);
+                            throw error5;
+                        }
+                        console.log(results5);
+                        if (!results5[0]) {
+                            console.log('something wrong1');
+                            response.redirect('/');
+                            return false;
+                        }
+                        var alarming_id = comment_writer;
+                        var unknown = results5[0].unknown;
+                        var comment_id = results5[0].id;
+
+                        // 게시글에 대한 알람
+                        var sql6 = 'SELECT post_writer FROM post WHERE id=?';
+                        conn.query(sql6, [postId], function (error6, results6) {
+                            if (error6) {
+                                console.log(error6);
+                                throw error6;
+                            }
+
+                            if (!results6[0]) {
+                                console.log('something wrong2');
+                                response.redirect('/');
+                                return false;
+                            }
+                            var alarmed_id = results6[0].post_writer;
+
+                            if (alarmed_id !== alarming_id) {     // 알람 받는 대상 != 알람 주는 대상
+                                var sql7 = 'INSERT INTO alarm (comment_id, alarmed_id, alarming_id, post_id, board_id, parent_id, unknown) VALUES (?, ?, ?, ?, ?, ?, ?)';
+                                conn.query(sql7, [comment_id, alarmed_id, alarming_id, postId, boardId, 0, unknown], function (error7, results7) {
+                                    if (error7) {
+                                        console.log(error7);
+                                        throw error7;
+                                    }
+                                });
+                            }
+                            response.redirect('/board/' + boardId + '/0/' + postId);
+                        });
+                    });
                 });
             }
         });
     }
     else {      // 자게 또는 공지사항인 경우
-        var sql = 'INSERT INTO comment (board_id, post_id, comment_writer, comment_content) VALUES (?, ?, ?, ?)';
-        conn.query(sql, [boardId, postId, comment_writer, comment_content], function (error, results) {
-            if (error) {
-                console.log(error);
-                throw error;
+        var sql4 = 'INSERT INTO comment (board_id, post_id, comment_writer, comment_content) VALUES (?, ?, ?, ?)';
+        conn.query(sql4, [boardId, postId, comment_writer, comment_content], function (error4, results4) {
+            if (error4) {
+                console.log(error4);
+                throw error4;
             }
-        });
-    }
-    // select 해서  comment_id 얻어야 함
-    // 알람에 insert 처리 해야함 (게시글에 대한 알람 1개만 생성)
-
-    var sql = 'SELECT id, unknown FROM comment WHERE board_id=? AND post_id=? AND comment_writer=? AND comment_content=? AND parent_id=0';
-    conn.query(sql, [boardId, postId, comment_writer, comment_content], function (error, results) {
-        if (error) {
-            console.log(error);
-            throw error;
-        }
-        if (!results[0]) {
-            console.log('something wrong');
-            response.redirect('/');
-        }
-        var alarming_id = comment_writer;
-        var unknown = results[0].unknown;
-        var comment_id = results[0].id;
-
-        // 게시글에 대한 알람
-        var sql = 'SELECT post_writer FROM post WHERE id=?';
-        conn.query(sql, [postId], function (error2, results2) {
-            if (error2) {
-                console.log(error2);
-                throw error2;
-            }
-            if (!results2[0]) {
-                console.log('something wrong');
-                response.redirect('/');
-            }
-            var alarmed_id = results2[0].post_writer;
-
-            if (alarmed_id === alarming_id) {     // 알람 받는 대상 = 알람 주는 대상
-                return false;
-            }
-
-            var sql = 'INSERT INTO alarm (comment_id, alarmed_id, alarming_id, post_id, board_id, parent_id, unknown) VALUES (?, ?, ?, ?, ?, ?, ?)';
-            conn.query(sql, [comment_id, alarmed_id, alarming_id, postId, boardId, 0, unknown], function (error3, results3) {
-                if (error3) {
-                    console.log(error3);
-                    throw error3;
+            var sql5 = 'SELECT id, unknown FROM comment WHERE board_id=? AND post_id=? AND comment_writer=? AND comment_content=? AND parent_id=0 ORDER BY id DESC';
+            conn.query(sql5, [boardId, postId, comment_writer, comment_content], function (error5, results5) {
+                if (error5) {
+                    console.log(error5);
+                    throw error5;
                 }
+                console.log(results5);
+                if (!results5[0]) {
+                    console.log('something wrong1');
+                    response.redirect('/');
+                    return false;
+                }
+                var alarming_id = comment_writer;
+                var unknown = results5[0].unknown;
+                var comment_id = results5[0].id;
+
+                // 게시글에 대한 알람
+                var sql6 = 'SELECT post_writer FROM post WHERE id=?';
+                conn.query(sql6, [postId], function (error6, results6) {
+                    if (error6) {
+                        console.log(error6);
+                        throw error6;
+                    }
+
+                    if (!results6[0]) {
+                        console.log('something wrong2');
+                        response.redirect('/');
+                        return false;
+                    }
+                    var alarmed_id = results6[0].post_writer;
+
+                    if (alarmed_id !== alarming_id) {     // 알람 받는 대상 != 알람 주는 대상
+                        var sql7 = 'INSERT INTO alarm (comment_id, alarmed_id, alarming_id, post_id, board_id, parent_id, unknown) VALUES (?, ?, ?, ?, ?, ?, ?)';
+                        conn.query(sql7, [comment_id, alarmed_id, alarming_id, postId, boardId, 0, unknown], function (error7, results7) {
+                            if (error7) {
+                                console.log(error7);
+                                throw error7;
+                            }
+                        });
+                    }
+                    response.redirect('/board/' + boardId + '/0/' + postId);
+                });
             });
         });
-    });
-    response.redirect('/board/' + boardId + '/0/' + postId);
+    }
+
+    // select 해서  comment_id 얻어야 함
+    // 알람에 insert 처리 해야함 (게시글에 대한 알람 1개만 생성)
 });
 
 router.get('/update/:boardId/:postId/:commentId', function (request, response) {
