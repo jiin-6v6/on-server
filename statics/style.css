@@ -1,6 +1,7 @@
 body {
     font-family: 'Nanum Gothic Coding', monospace;
     background-color: rgb(230, 230, 230);
+    min-height: 73vh;
 }
 
 /* input[type=submit] {
@@ -19,6 +20,10 @@ header {
     color: rgb(240, 240, 240);
 }
 
+main{
+    min-height: 73vh;
+}
+
 nav {
     width: 20%;
     height: 100%;
@@ -31,6 +36,7 @@ nav {
 
 footer {
     border-top: 1px solid #bcbcbc;
+    height: 73px;
 }
 
 hr {
@@ -92,6 +98,7 @@ a:hover {
     float: right;
     text-align: center;
     border-left: 1px solid #bcbcbc;
+    min-height: 73vh;
 }
 
 /* post on board */
@@ -101,9 +108,9 @@ a:hover {
 #board_post_content{
     text-align: left;
     width: 700px;
-    height: 200px;
 }
-#post_content_update, #post_content_write{
+
+#post_content_write{
     text-align: left;
     width:700px;
     height: 200px;

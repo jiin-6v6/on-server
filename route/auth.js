@@ -12,6 +12,9 @@ var mysql = require('mysql');
 var template = require('../lib/template.js');
 var auth = require('../lib/auth.js');
 
+var bodyParser = require("body-parser");
+var urlencodedParser = bodyParser.json({ extended: false });
+
 // mysql connection
 var conn = mysql.createConnection({
     host: 'localhost',
@@ -141,21 +144,54 @@ module.exports = function (passport) {
                 <div style="margin:0; padding: 0;">
                     <li style="position:relative;">
                     <input class="input_box" type="text" id="auth_email" name="auth_email" placeholder="이메일" onblur="check_email();">
-                    <button formaction="/auth/email_send" class="btn regist_btn_a" style="font-size: 12px; padding:0;">인증번호보내기</button>
+                    <button class="btn regist_btn_a" style="font-size: 12px; padding:0;" onclick="send_mail();return false;">인증번호보내기</button>
                     <article id="emailMsg"></article>
                     </li>
-                </div>
-                <div style="margin:0; padding: 0;">
+                    </div>
+                    <div style="margin:0; padding: 0;">
                     <li style="position:relative;">
-                    <input class="input_box" type="text" name="auth_email_check" placeholder="인증번호">
-                    <button href="#" class="btn regist_btn_a">확인</button>
+                    <input class="input_box" type="text" id="auth_email_check" name="auth_email_check" placeholder="인증번호">
+                    <button href="#" class="btn regist_btn_a" onclick="check_num();return false;">확인</button>
+                    <article id="numMsg"></article>
                     </li>
                 </div>
+                    <input type="hidden" id="hidden_email"></input>
+                    <input type="hidden" id="hidden_num"></input>
                 <button type="submit" formaction="/my_info/register_process" class="btn regist_btn_a" style="width:100%; position:static; margin-top: 30px;" onclick="return regist_check();">회원가입</button>
             </ul>
         </form>
         <hr>
         <script>
+            function check_num(){
+                var checkingNum = document.getElementById("hidden_num").value;
+                var input_num = document.getElementById("auth_email_check").value;
+
+                if(!(checkingNum === input_num) || checkingNum==="" || input_num===""){
+                    document.getElementById("numMsg").innerHTML = "인증번호를 확인해주세요.";
+                    return false;
+                } else{
+                    document.getElementById("numMsg").innerHTML = "인증번호가 확인되었습니다.";
+                    return true;
+                }
+            }
+            
+            function send_mail(){
+                if(!check_email()){
+                    alert("올바르게 입력해주세요.");
+                    return false;
+                } else{
+                    var checkingEmail = document.getElementById("auth_email").value;
+                    var data = {auth_email:checkingEmail};
+                    fetch('/auth/email_send',{
+                        headers: { 'Content-Type': 'application/json' },
+                        method:'POST', body:JSON.stringify(data)})
+                        .then(res => res.json())
+                        .then(json => {
+                            document.getElementById("hidden_email").value = checkingEmail;
+                            document.getElementById("hidden_num").value = json.auth_num;
+                            alert(json.msg);})
+                }
+            }
             function check_name(){
                 var checkingName = document.getElementById("auth_name").value;
                 if(checkingName === ""){
@@ -261,9 +297,10 @@ module.exports = function (passport) {
                 var pwdReturn2 = check_pwd2();
                 var birthReturn = check_birth();
                 var emailReturn = check_email();
-                console.log(nameReturn && idReturn && pwdReturn1 && pwdReturn2 && birthReturn && emailReturn);
-                console.log(nameReturn, idReturn, pwdReturn1, pwdReturn2, birthReturn, emailReturn);
-                var returnValue = nameReturn && idReturn && pwdReturn1 && pwdReturn2 && birthReturn && emailReturn;
+                var numReturn = check_num();
+                console.log(nameReturn && idReturn && pwdReturn1 && pwdReturn2 && birthReturn && emailReturn && numReturn);
+                console.log(nameReturn, idReturn, pwdReturn1, pwdReturn2, birthReturn, emailReturn, numReturn);
+                var returnValue = nameReturn && idReturn && pwdReturn1 && pwdReturn2 && birthReturn && emailReturn && numReturn;
                 if(returnValue){
                     alert("회원가입이 완료되었습니다.");
                     return returnValue
@@ -279,30 +316,30 @@ module.exports = function (passport) {
         response.send(html);
     });
 
-    router.post('/register_process', function (request, response) {
-        var post = request.body;
-        var salt = '';
-        var hashingPwd = '';
-        crypto.randomBytes(64, (err, buf) => {
-            if (err) throw err;
-            salt = buf.toString('hex');
+    // router.post('/register_process', function (request, response) {
+    //     var post = request.body;
+    //     var salt = '';
+    //     var hashingPwd = '';
+    //     crypto.randomBytes(64, (err, buf) => {
+    //         if (err) throw err;
+    //         salt = buf.toString('hex');
 
-            // hashing
-            crypto.pbkdf2(post.auth_pwd, salt, 112311, 64, 'sha512', (err, derivedKey) => {
-                if (err) throw err;
-                hashingPwd = derivedKey.toString('hex');
+    //         // hashing
+    //         crypto.pbkdf2(post.auth_pwd, salt, 112311, 64, 'sha512', (err, derivedKey) => {
+    //             if (err) throw err;
+    //             hashingPwd = derivedKey.toString('hex');
 
-                // sql insert
-                var insert_sql = 'INSERT INTO user_info (id, salt, pwd, name, birth, email) VALUES (?,?,?,?,?,?);';
-                conn.query(insert_sql, [post.auth_id, salt, hashingPwd, post.auth_name, post.auth_birth, post.auth_email], function (error, users) {
-                    if (error) {
-                        throw error;
-                    }
-                    response.redirect('/auth/login');
-                });
-            });
-        });
-    });
+    //             // sql insert
+    //             var insert_sql = 'INSERT INTO user_info (id, salt, pwd, name, birth, email) VALUES (?,?,?,?,?,?);';
+    //             conn.query(insert_sql, [post.auth_id, salt, hashingPwd, post.auth_name, post.auth_birth, post.auth_email], function (error, users) {
+    //                 if (error) {
+    //                     throw error;
+    //                 }
+    //                 response.redirect('/auth/login');
+    //             });
+    //         });
+    //     });
+    // });
 
     router.get('/find_info', function (request, response) {
         if (auth.isLogin(request, response)) {
@@ -352,6 +389,43 @@ module.exports = function (passport) {
             var html = template.basic(title, login, nav, content);
             response.send(html);
         }
+    });
+
+    router.post('/email_send',urlencodedParser, function(request, response){
+        var user_email = request.body.auth_email;
+        var temp_num = '';
+        for(var i=0; i<6; i++){
+            temp_num += Math.floor(Math.random()*10);
+        }
+        console.log(temp_num);
+        var transporter = nodemailer.createTransport(smtpTransport({
+            service: 'gmail',
+            host: 'smtp.gmail.com',
+            auth: {
+              user: 'agesum100@gmail.com',
+              pass: 'kjkj9597!'
+            } //이메일 보내는 사람 계정
+        }));
+           
+        var mailOptions = {
+        from: 'agesum100@gmail.com', //보내는 사람
+        to: user_email, //받는 사람
+        subject: '다미부기 인증메일', //이메일 제목
+        text: `다미부기 인증 번호 : [${temp_num}]` //내용, html도 쓸수 있음(html: )
+        };
+        
+        //이메일 보내기
+        transporter.sendMail(mailOptions, function(error, info){
+        if (error) {
+            console.log(error);
+            response.send({ msg: '[Error] 정보를 확인해주세요.', value: false});
+        } else {
+            console.log('Email sent: ' + info.response); //잘보내졌나 확인
+            response.send({ msg: '이메일이 발송되었습니다.', value: true, auth_num:temp_num});
+        }
+        });
+
+        // response.redirect('/');
     });
 
     router.post('/find_id_process', function (request, response) {
