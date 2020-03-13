@@ -92,7 +92,7 @@ var files12 = [{name:'post_file1', maxCount:1}, {name:'post_file2', maxCount:1},
         {name:'post_file7', maxCount:1}, {name:'post_file8', maxCount:1},
         {name:'post_file9', maxCount:1}, {name:'post_file10', maxCount:1},
         {name:'post_file11', maxCount:1}, {name:'post_file12', maxCount:1}];
-router.post('/write_process', upload.fields(), function (request, response) {
+router.post('/write_process', upload.fields(files12), function (request, response) {
     if (!auth.isLogin(request, response)) {
         response.redirect('/');
         return false;
