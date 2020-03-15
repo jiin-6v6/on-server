@@ -121,38 +121,38 @@ module.exports = function (passport) {
             <ul id = "regist_list">
                 <li>
                     <input class="input_box" type="text" id="auth_name" name="auth_name" placeholder="이름" onblur="check_name();">
-                    <article id="nameMsg"></article>
+                    <article id="nameMsg">&nbsp</article>
                 </li>
                 <div style="margin:0; padding: 0;">
                     <li style="position:relative;">
                     <input class="input_box" type="text" id="auth_id" name="auth_id" placeholder="ID" onblur="check_id();">
-                    <article id="idMsg"></article>
+                    <article id="idMsg">&nbsp</article>
                     </li>
                 </div>
                 <li>
                     <input class="input_box" type="password" id="auth_pwd1" name="auth_pwd" placeholder="PASSWORD" onblur="check_pwd1();">
-                    <article id="pwdMsg1"></article>
+                    <article id="pwdMsg1">&nbsp</article>
                 </li>
                 <li>
                     <input class="input_box" type="password" id="auth_pwd2" name="auth_pwd_check" placeholder="PASSWORD 확인" onblur="check_pwd2();">
-                    <article id="pwdMsg2"></article>
+                    <article id="pwdMsg2">&nbsp</article>
                 </li>
                 <li>
                     <input class="input_box" type="text" id="auth_birth" name="auth_birth" placeholder="생년월일 ex)1999-05-05" maxlength="10" onblur="check_birth();">
-                    <article id="birthMsg"></article>
+                    <article id="birthMsg">&nbsp</article>
                 </li>
                 <div style="margin:0; padding: 0;">
                     <li style="position:relative;">
                     <input class="input_box" type="text" id="auth_email" name="auth_email" placeholder="이메일" onblur="check_email();">
                     <button class="btn regist_btn_a" style="font-size: 12px; padding:0;" onclick="send_mail();return false;">인증번호보내기</button>
-                    <article id="emailMsg"></article>
+                    <article id="emailMsg">&nbsp</article>
                     </li>
                     </div>
                     <div style="margin:0; padding: 0;">
                     <li style="position:relative;">
                     <input class="input_box" type="text" id="auth_email_check" name="auth_email_check" placeholder="인증번호">
                     <button href="#" class="btn regist_btn_a" onclick="check_num();return false;">확인</button>
-                    <article id="numMsg"></article>
+                    <article id="numMsg">&nbsp</article>
                     </li>
                 </div>
                     <input type="hidden" id="hidden_email"></input>

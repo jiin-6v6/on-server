@@ -86,18 +86,18 @@ router.post('/write', function (request, response) {
     var html = template.basic(title, login, nav, content);
     response.send(html);
 });
-var files12 = [{name:'post_file1', maxCount:1}, {name:'post_file2', maxCount:1},
-        {name:'post_file3', maxCount:1}, {name:'post_file4', maxCount:1},
-        {name:'post_file5', maxCount:1}, {name:'post_file6', maxCount:1},
-        {name:'post_file7', maxCount:1}, {name:'post_file8', maxCount:1},
-        {name:'post_file9', maxCount:1}, {name:'post_file10', maxCount:1},
-        {name:'post_file11', maxCount:1}, {name:'post_file12', maxCount:1}];
+var files12 = [{name:'file1', maxCount:1}, {name:'file2', maxCount:1},
+        {name:'file3', maxCount:1}, {name:'file4', maxCount:1},
+        {name:'file5', maxCount:1}, {name:'file6', maxCount:1},
+        {name:'file7', maxCount:1}, {name:'file8', maxCount:1},
+        {name:'file9', maxCount:1}, {name:'file10', maxCount:1},
+        {name:'file11', maxCount:1}, {name:'file12', maxCount:1}];
 router.post('/write_process', upload.fields(files12), function (request, response) {
     if (!auth.isLogin(request, response)) {
         response.redirect('/');
         return false;
     }
-    console.log(request.files['post_file1']);
+    console.log(request.files);
     var post = request.body;
     var boardId = post.category;
     var post_title = post.post_title;
