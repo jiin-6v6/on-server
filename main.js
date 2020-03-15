@@ -33,7 +33,7 @@ app.use(session({
     cookie: { secure: false, maxAge: 7200000 },
     saveUninitialized: true,
     store: new MySQLStore({
-        host: 'db.kikijo.gaio.io',
+        host: 'db.kikijo.gabio.io',
         user: 'kikijo',
         password: 'mintchoco9597',
         database: 'dbkikijo'
