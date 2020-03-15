@@ -67,6 +67,11 @@ a:hover {
     color: #353434;
 }
 
+#dami{
+    font-size:40px;
+    color:rgb(240,240,240);
+}
+
 #btn_login, #btn_logout, #btn_my_info, #btn_write, #btn_update, #btn_find_id, #btn_find_pwd, #btn_admin, #btn_comment_update{
     color: rgb(240, 240, 240);
     font-weight: 700;
@@ -257,4 +262,10 @@ a:hover {
 /* /my_info/alarm */
 #alarm_list{
     text-align: left;
+}
+
+/* look post */
+#post_content img{
+    max-width:100%;
+    height: auto;
 }

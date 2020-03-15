@@ -43,6 +43,12 @@ var storage = multer.diskStorage({
 });
 
 var upload = multer({ storage: storage });
+var files12 = [{name:'file1', maxCount:1}, {name:'file2', maxCount:1},
+                {name:'file3', maxCount:1}, {name:'file4', maxCount:1},
+                {name:'file5', maxCount:1}, {name:'file6', maxCount:1},
+                {name:'file7', maxCount:1}, {name:'file8', maxCount:1},
+                {name:'file9', maxCount:1}, {name:'file10', maxCount:1},
+                {name:'file11', maxCount:1}, {name:'file12', maxCount:1}];
 
 
 var router = express.Router();
@@ -86,22 +92,24 @@ router.post('/write', function (request, response) {
     var html = template.basic(title, login, nav, content);
     response.send(html);
 });
-var files12 = [{name:'file1', maxCount:1}, {name:'file2', maxCount:1},
-        {name:'file3', maxCount:1}, {name:'file4', maxCount:1},
-        {name:'file5', maxCount:1}, {name:'file6', maxCount:1},
-        {name:'file7', maxCount:1}, {name:'file8', maxCount:1},
-        {name:'file9', maxCount:1}, {name:'file10', maxCount:1},
-        {name:'file11', maxCount:1}, {name:'file12', maxCount:1}];
+
 router.post('/write_process', upload.fields(files12), function (request, response) {
     if (!auth.isLogin(request, response)) {
         response.redirect('/');
         return false;
     }
-    console.log(request.files);
     var post = request.body;
     var boardId = post.category;
     var post_title = post.post_title;
     var post_content = post.post_content;
+
+    for (var i = 1; i < 13; i++) {
+        var imageNum = "(image" + i + ")";
+        var fileNum = "file" + i;
+        if (post_content.includes(imageNum)) {
+            post_content = post_content.replace(imageNum, "<img src='/uploads/" + request.files[fileNum][0].filename + "'>");
+        }
+    }
 
     if (boardId != 'notice' && boardId != 'free' && boardId != 'anonymous') {
         // category 지정 안됐을 때도 여기로 오는데 이거 alert로 처리하고 싶어요
@@ -125,7 +133,6 @@ router.post('/write_process', upload.fields(files12), function (request, respons
                 return false;
             }
             else {
-                var postId = results2[0].id;
                 response.redirect('/board/' + boardId + '/1');
             }
         });
@@ -172,7 +179,7 @@ router.get('/update/:boardId/:postId', function (request, response) {
     });
 });
 
-router.post('/update_process/:postId', function (request, response) {
+router.post('/update_process/:postId', upload.fields(files12), function (request, response) {
     if (!auth.isLogin(request, response)) {
         response.redirect('/');
         return false;
@@ -183,7 +190,15 @@ router.post('/update_process/:postId', function (request, response) {
     var post = request.body;
     var boardId = post.category;
     var post_title = post.post_title;
-    var content = post.post_content;
+    var post_content = post.post_content;
+
+    for (var i = 1; i < 13; i++) {
+        var imageNum = "(image" + i + ")";
+        var fileNum = "file" + i;
+        if (post_content.includes(imageNum)) {
+            post_content = post_content.replace(imageNum, "<img src='/uploads/" + request.files[fileNum][0].filename + "'>");
+        }
+    }
 
     if (boardId != 'notice' && boardId != 'free' && boardId != 'anonymous') {
         // category 지정 안됐을 때도 여기로 오는데 이거 alert로 처리하고 싶어요
@@ -207,7 +222,7 @@ router.post('/update_process/:postId', function (request, response) {
             return false;
         }
         var sql = 'UPDATE post SET post_title=?, post_content=?, board_id=?, time=CURRENT_TIMESTAMP, isUpdate=1 WHERE id=?';
-        conn.query(sql, [post_title, content, boardId, postId], function (error2, results2) {
+        conn.query(sql, [post_title, post_content, boardId, postId], function (error2, results2) {
             if (error2) {
                 console.log(error2);
                 response.status(500).send('Internal Server Error');
