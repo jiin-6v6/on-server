@@ -5,14 +5,31 @@ var template = require('../lib/template.js');
 var auth = require('../lib/auth.js');
 
 // mysql connection
-var conn = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'mintchoco',
-    database: 'community',
-    dateStrings: 'date'
-});
-conn.connect();
+var conn;
+function handleDisconnect() {
+    conn = mysql.createConnection({
+        host: 'db.kikijo.gabia.io',
+        user: 'kikijo',
+        password: 'mintchoco9597',
+        database: 'dbkikijo',
+        dateStrings: 'date'
+    });
+    conn.connect(function (err) {
+        if (err) {
+            console.log('error when connecting to db:', err);
+            setTimeout(handleDisconnect, 2000);
+        }
+    });
+    conn.on('error', function (err) {
+        console.log('db error', err);
+        if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+            return handleDisconnect();
+        } else {
+            throw err;
+        }
+    });
+}
+handleDisconnect();
 
 router.get('/', function (request, response) {
     var select_sql = 'SELECT * FROM sessions';
@@ -48,7 +65,7 @@ router.get('/', function (request, response) {
         <p id="side-list"><a href="/board/anonymous/1">익명게시판</a></p>
         </nav>`;
     }
-    var content = `<div id="content"><img src="/icebear.png" width=500px></div>`;
+    var content = `<div id="content"></div>`;
     if (request.cookies.once_logined == false) {
         content += `<script type="text/javascript">alert("세션이 만료되어 다시 로그인 해주세요");</script>`
     }

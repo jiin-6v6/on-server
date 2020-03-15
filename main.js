@@ -33,10 +33,10 @@ app.use(session({
     cookie: { secure: false, maxAge: 7200000 },
     saveUninitialized: true,
     store: new MySQLStore({
-        host: 'localhost',
-        user: 'root',
-        password: 'mintchoco',
-        database: 'community'
+        host: 'db.kikijo.gaio.io',
+        user: 'kikijo',
+        password: 'mintchoco9597',
+        database: 'dbkikijo'
     })
 }));
 app.use(function (req, res, next) {
@@ -84,13 +84,11 @@ app.use(function (err, req, res, next) {
     res.status(500).send('Something broke!');
 });
 
-// app.listen(8080, function(){
-//     console.log('Example app listening on port 8080!');
-// })
+app.listen(8080, function(){
+    console.log('Example app listening on port 8080!');
+})
 
-http.createServer(app).listen(80, function(){
-    console.log('Example app listening on port 80!')
-});
-https.createServer(app).listen(443);
-
-
+// http.createServer(app).listen(80, function(){
+//     console.log('Example app listening on port 80!')
+// });
+// https.createServer(app).listen(443);

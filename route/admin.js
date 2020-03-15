@@ -6,14 +6,32 @@ var template = require('../lib/template.js');
 var mysql = require('mysql');
 var auth = require('../lib/auth.js');
 
-var conn = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'mintchoco',
-    database: 'community',
-    dateStrings: 'date'
-});
-conn.connect();
+// mysql connection
+var conn;
+function handleDisconnect() {
+    conn = mysql.createConnection({
+        host: 'db.kikijo.gabia.io',
+        user: 'kikijo',
+        password: 'mintchoco9597',
+        database: 'dbkikijo',
+        dateStrings: 'date'
+    });
+    conn.connect(function (err) {
+        if (err) {
+            console.log('error when connecting to db:', err);
+            setTimeout(handleDisconnect, 2000);
+        }
+    });
+    conn.on('error', function (err) {
+        console.log('db error', err);
+        if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+            return handleDisconnect();
+        } else {
+            throw err;
+        }
+    });
+}
+handleDisconnect();
 
 router.get('/:report_page', function (request, response) {
     if (!auth.isLogin(request, response)) {

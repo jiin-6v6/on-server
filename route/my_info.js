@@ -11,14 +11,31 @@ var template = require('../lib/template.js');
 var auth = require('../lib/auth.js');
 
 // mysql connection
-var conn = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'mintchoco',
-    database: 'community',
-    dateStrings: 'date'
-});
-conn.connect();
+var conn;
+function handleDisconnect() {
+    conn = mysql.createConnection({
+        host: 'db.kikijo.gabia.io',
+        user: 'kikijo',
+        password: 'mintchoco9597',
+        database: 'dbkikijo',
+        dateStrings: 'date'
+    });
+    conn.connect(function (err) {
+        if (err) {
+            console.log('error when connecting to db:', err);
+            setTimeout(handleDisconnect, 2000);
+        }
+    });
+    conn.on('error', function (err) {
+        console.log('db error', err);
+        if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+            return handleDisconnect();
+        } else {
+            throw err;
+        }
+    });
+}
+handleDisconnect();
 
 router.get('/', function (request, response) {
     if (!auth.isLogin(request, response)) {
@@ -51,13 +68,13 @@ router.get('/update', function (request, response) {
         response.redirect('/');
         return false;
     }
-    
+
     var user_id = request.user.id;
     var select_sql = 'SELECT * FROM user_info WHERE id=?';
 
     conn.query(select_sql, [user_id], function (error, data) {
         if (error) throw error;
-        var post = {user_id:`${data[0].id}`, user_birth:`${data[0].birth}`, user_email:`${data[0].email}`};
+        var post = { user_id: `${data[0].id}`, user_birth: `${data[0].birth}`, user_email: `${data[0].email}` };
         var login = auth.statusUI(request, response);
         var title = ``;
         var nav = `<nav>
@@ -130,28 +147,21 @@ router.post('/update_process', urlencodedParser, function (request, response) { 
         }
         // console.log(results[0].SUCCESS); // 있으면 1 없으면 0 return
 
-        if(results[0].SUCCESS && request.session.passport.user!==checkingId){ // 다른 아이디가 이미 존재하는 경우
-            response.send({msg:"입력정보를 확인해주세요.", value:false, idChanged:false});
-        } else{
+        if (results[0].SUCCESS && request.session.passport.user !== checkingId) { // 다른 아이디가 이미 존재하는 경우
+            response.send({ msg: "입력정보를 확인해주세요.", value: false, idChanged: false });
+        } else {
             // update
             conn.query(update_sql, [post.auth_id, post.auth_birth, post.auth_email, request.user.id], function (error2, data2) {
                 if (error2) throw error2;
-                console.log(checkingId,request.user.id);
-                if(checkingId === request.user.id){
-                    response.send({msg:"회원정보가 수정되었습니다.", value:true, idChanged:false});
-                } else{
-                    response.send({msg:"회원정보가 수정되었습니다.", value:true, idChanged:true});
-                } 
+                console.log(checkingId, request.user.id);
+                if (checkingId === request.user.id) {
+                    response.send({ msg: "회원정보가 수정되었습니다.", value: true, idChanged: false });
+                } else {
+                    response.send({ msg: "회원정보가 수정되었습니다.", value: true, idChanged: true });
+                }
                 // 아이디 변경시 세션 수정해야됨 근데 sql 세션id값이랑 web 세션id값이랑 다름
             })
         }
-        // if (request.session.passport && request.session.passport.user===checkingId){ // 로그인 되어있는 경우 and 아이디가 같은 경우
-        //     response.send({ msg: '현재 아이디입니다.', value: true, isIdChange: true});
-        // } else if (results[0].SUCCESS) {
-        //     response.send({ msg: '이미 사용중인 아이디입니다.', value: false, isIdChange: false });
-        // } else {
-        //     response.send({ msg: '사용 가능한 아이디입니다.', value: true, isIdChange: false });
-        // }
     });
 });
 

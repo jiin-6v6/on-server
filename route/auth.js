@@ -16,14 +16,31 @@ var bodyParser = require("body-parser");
 var urlencodedParser = bodyParser.json({ extended: false });
 
 // mysql connection
-var conn = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'mintchoco',
-    database: 'community',
-    dateStrings: 'date'
-});
-conn.connect();
+var conn;
+function handleDisconnect() {
+    conn = mysql.createConnection({
+        host: 'db.kikijo.gabia.io',
+        user: 'kikijo',
+        password: 'mintchoco9597',
+        database: 'dbkikijo',
+        dateStrings: 'date'
+    });
+    conn.connect(function (err) {
+        if (err) {
+            console.log('error when connecting to db:', err);
+            setTimeout(handleDisconnect, 2000);
+        }
+    });
+    conn.on('error', function (err) {
+        console.log('db error', err);
+        if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+            return handleDisconnect();
+        } else {
+            throw err;
+        }
+    });
+}
+handleDisconnect();
 
 module.exports = function (passport) {
     router.get('/login', function (request, response) {
@@ -391,38 +408,38 @@ module.exports = function (passport) {
         }
     });
 
-    router.post('/email_send',urlencodedParser, function(request, response){
+    router.post('/email_send', urlencodedParser, function (request, response) {
         var user_email = request.body.auth_email;
         var temp_num = '';
-        for(var i=0; i<6; i++){
-            temp_num += Math.floor(Math.random()*10);
+        for (var i = 0; i < 6; i++) {
+            temp_num += Math.floor(Math.random() * 10);
         }
         console.log(temp_num);
         var transporter = nodemailer.createTransport(smtpTransport({
             service: 'gmail',
             host: 'smtp.gmail.com',
             auth: {
-              user: 'agesum100@gmail.com',
-              pass: 'kjkj9597!'
+                user: 'agesum100@gmail.com',
+                pass: 'kjkj9597!'
             } //이메일 보내는 사람 계정
         }));
-           
+
         var mailOptions = {
-        from: 'agesum100@gmail.com', //보내는 사람
-        to: user_email, //받는 사람
-        subject: '다미부기 인증메일', //이메일 제목
-        text: `다미부기 인증 번호 : [${temp_num}]` //내용, html도 쓸수 있음(html: )
+            from: 'agesum100@gmail.com', //보내는 사람
+            to: user_email, //받는 사람
+            subject: '다미부기 인증메일', //이메일 제목
+            text: `다미부기 인증 번호 : [${temp_num}]` //내용, html도 쓸수 있음(html: )
         };
-        
+
         //이메일 보내기
-        transporter.sendMail(mailOptions, function(error, info){
-        if (error) {
-            console.log(error);
-            response.send({ msg: '[Error] 정보를 확인해주세요.', value: false});
-        } else {
-            console.log('Email sent: ' + info.response); //잘보내졌나 확인
-            response.send({ msg: '이메일이 발송되었습니다.', value: true, auth_num:temp_num});
-        }
+        transporter.sendMail(mailOptions, function (error, info) {
+            if (error) {
+                console.log(error);
+                response.send({ msg: '[Error] 정보를 확인해주세요.', value: false });
+            } else {
+                console.log('Email sent: ' + info.response); //잘보내졌나 확인
+                response.send({ msg: '이메일이 발송되었습니다.', value: true, auth_num: temp_num });
+            }
         });
 
         // response.redirect('/');
@@ -493,8 +510,8 @@ module.exports = function (passport) {
             }
             if (results[0]) {
                 var temp_pwd = '';
-                for(var i=0; i<8; i++){
-                    temp_pwd += Math.floor(Math.random()*10);
+                for (var i = 0; i < 8; i++) {
+                    temp_pwd += Math.floor(Math.random() * 10);
                 }
                 var salt = '';
                 var hashingPwd = '';
@@ -520,26 +537,26 @@ module.exports = function (passport) {
                     service: 'gmail',
                     host: 'smtp.gmail.com',
                     auth: {
-                      user: 'agesum100@gmail.com',
-                      pass: 'kjkj9597!'
+                        user: 'agesum100@gmail.com',
+                        pass: 'kjkj9597!'
                     } //이메일 보내는 사람 계정
                 }));
-                   
+
                 var mailOptions = {
                     from: 'agesum100@gmail.com', //보내는 사람
                     to: email, //받는 사람
                     subject: '다미부기 임시 비밀번호입니다.', //이메일 제목
-                    text: '임시 비밀번호: '+temp_pwd //내용, html도 쓸수 있음(html: )
+                    text: '임시 비밀번호: ' + temp_pwd //내용, html도 쓸수 있음(html: )
                 };
-                   
+
                 //이메일 보내기
-                transporter.sendMail(mailOptions, function(error, info){
+                transporter.sendMail(mailOptions, function (error, info) {
                     if (error) {
-                      console.log(error);
-                      response.send('<script type="text/javascript">alert("이메일 전송이 실패했습니다."); location.href="/auth/find_info";</script>');
+                        console.log(error);
+                        response.send('<script type="text/javascript">alert("이메일 전송이 실패했습니다."); location.href="/auth/find_info";</script>');
                     } else {
-                    //   console.log('Email sent: ' + info.response); //잘보내졌나 확인
-                      response.send('<script type="text/javascript">alert("이메일이 전송되었습니다."); location.href="/auth/find_info";</script>');
+                        //   console.log('Email sent: ' + info.response); //잘보내졌나 확인
+                        response.send('<script type="text/javascript">alert("이메일이 전송되었습니다."); location.href="/auth/find_info";</script>');
                     }
                 });
             }
@@ -550,141 +567,3 @@ module.exports = function (passport) {
     });
     return router;
 }
-// router.get('/login', function (request, response) {
-//     var flash_msg = request.flash();
-//     var feedback = ``;
-//     if(flash.error){
-//         feedback = flash_msg.error[0];
-//     }
-
-//     var title = ``;
-//     var nav = ``;
-//     var login = `<form action="/auth/login">
-//     <button onmouseover="this.style.color='#cccccc'" onmouseout="this.style.color=''" class="btn"
-//     type="submit" id="login">로그인</button>
-//     </form>`;
-
-//     var content = `<form action="/auth/login_process" method="POST">
-//         <p>아이디 : <input type="text" name="id" placeholer="아이디를 입력해주세요."></p>
-//         <p>비밀번호 : <input type="password" name="pwd" placeholer="비밀번호를 입력해주세요."></p>
-//         <p><input type="submit" value="로그인"></p>
-//         </form>
-//         <div id="flash_msg">${feedback}</div>
-//         `;
-
-//     var html = template.basic(title, login, nav, content);
-//     response.send(html);
-// });
-
-// /* passport 관련 부분. 나중에 더 알아봐야 함
-// router.post('/login_process', passport.authenticate('local', {
-//     failureRedirect: '/'
-// }), (req, res) => {
-//     res.redirect('/');
-// });
-// */
-
-
-// // router.post('/login_process', function (request, response) {
-// //     var post = request.body;
-// //     var id = post.id;
-// //     var password = post.pwd + "";
-
-// //     // salt, hash 부분 table에 추가해야 할 수도 있음
-// //     var sql = 'SELECT pwd FROM user_info WHERE id=?';
-// //     conn.query(sql, [id], function (error, results, field) {
-// //         if (error) {
-// //             throw error;
-// //         }
-// //         if (results[0] === undefined) {
-// //             console.log("There is no such id.");
-// //             response.redirect('/');
-// //         }
-// //         else {
-// //             if (password === results[0].pwd) {
-// //                 request.session.is_logined = true;
-// //                 request.session.user_id = id;
-// //                 request.session.save(function () {
-// //                     response.redirect(`/`);
-// //                 });
-// //             } else {
-// //                 response.send('Who?');
-// //             }
-// //             // response.redirect(`/topic/${title}`);
-
-// //             /* bcrypt 관련 더 알아보고 마저 수정해야 함
-// //             bcrypt.compare(req.body.password, results.password, function (err, result) {
-// //                 if (result) {
-// //                     res.redirect('/');
-// //                 } else {
-// //                     res.send('Incorrect password');
-// //                     res.redirect('/');
-// //                 }
-// //             });
-// //             */
-// //         }
-// //     });
-// // });
-
-
-// router.get('/logout', function (request, response) {
-//     request.logout();
-//     request.session.save(function(){
-//         response.redirect('/');
-//     });
-
-//     // request.session.destroy(function (err) {
-//     //     response.redirect('/');
-//     // });
-// });
-
-// router.get('/my_info', function(request, response){
-
-// });
-
-// module.exports = router;
-/*
-// print out post list
-router.get('/board/:boardId', function(req, res){
-    // login
-    if(!isLogin){
-        res.redirect('/');
-    }
-    else{
-        var boardId = sanitizeHtml(req.params.boardId);
-        var sql = 'SELECT * FROM post WHERE board_id=' + boardId;
-        if(boardId != 0 && boardId != 1 && boardId != 2){
-            wrongPath = true;
-            res.redirect('/');
-        }
-        else{
-            var login = `<form action="">
-            <button onmouseover="this.style.color='#cccccc'" onmouseout="this.style.color=''" class="btn"
-            type="submit" id="login">로그아웃</button>
-            <button onmouseover="this.style.color='#cccccc'" onmouseout="this.style.color=''" class="btn"
-            type="submit" id="login">내 정보</button>
-            </form>`;
-            conn.query(sql, function(error, results, field){
-                if(error){
-                    throw error;
-                }
-                var content = ``;
-                var title = ``;
-                var alert = ``;
-                var nav = `<h2>게시판</h2>
-                <p id="side-list"><a href="/board/0">공지사항</a></p>
-                <p id="side-list"><a href="/board/1">자유게시판</a></p>
-                <p id="side-list"><a href="/board/2">익명게시판</a></p>`;
-                if(results[0] === undefined){
-                    content = '게시글이 존재하지 않습니다.';
-                }
-                else{
-                    var content = template.postlist(results);
-                }
-                var html = template.HTML(title, login, nav, content, alert);
-                res.send(html);
-            });
-        }
-    }
-});
-*/

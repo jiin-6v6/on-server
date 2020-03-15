@@ -43,12 +43,12 @@ var storage = multer.diskStorage({
 });
 
 var upload = multer({ storage: storage });
-var files12 = [{name:'file1', maxCount:1}, {name:'file2', maxCount:1},
-                {name:'file3', maxCount:1}, {name:'file4', maxCount:1},
-                {name:'file5', maxCount:1}, {name:'file6', maxCount:1},
-                {name:'file7', maxCount:1}, {name:'file8', maxCount:1},
-                {name:'file9', maxCount:1}, {name:'file10', maxCount:1},
-                {name:'file11', maxCount:1}, {name:'file12', maxCount:1}];
+var files12 = [{ name: 'file1', maxCount: 1 }, { name: 'file2', maxCount: 1 },
+{ name: 'file3', maxCount: 1 }, { name: 'file4', maxCount: 1 },
+{ name: 'file5', maxCount: 1 }, { name: 'file6', maxCount: 1 },
+{ name: 'file7', maxCount: 1 }, { name: 'file8', maxCount: 1 },
+{ name: 'file9', maxCount: 1 }, { name: 'file10', maxCount: 1 },
+{ name: 'file11', maxCount: 1 }, { name: 'file12', maxCount: 1 }];
 
 
 var router = express.Router();
@@ -59,14 +59,31 @@ var template = require('../lib/template.js');
 var auth = require('../lib/auth.js');
 
 // mysql connection
-var conn = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'mintchoco',
-    database: 'community',
-    dateStrings: 'date'
-});
-conn.connect();
+var conn;
+function handleDisconnect() {
+    conn = mysql.createConnection({
+        host: 'db.kikijo.gabia.io',
+        user: 'kikijo',
+        password: 'mintchoco9597',
+        database: 'dbkikijo',
+        dateStrings: 'date'
+    });
+    conn.connect(function (err) {
+        if (err) {
+            console.log('error when connecting to db:', err);
+            setTimeout(handleDisconnect, 2000);
+        }
+    });
+    conn.on('error', function (err) {
+        console.log('db error', err);
+        if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+            return handleDisconnect();
+        } else {
+            throw err;
+        }
+    });
+}
+handleDisconnect();
 
 router.post('/write', function (request, response) {
     if (!auth.isLogin(request, response)) {
